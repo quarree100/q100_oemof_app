@@ -8,6 +8,8 @@ https://github.com/oemof/oemof-examples
 5.1.2018 - uwe.krien@rl-institut.de
 7.5.2018 - jonathan.amme@rl-institut.de
 
+01-2019 - johannes.roeder@uni-bremen.de
+
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 

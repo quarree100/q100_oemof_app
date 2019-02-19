@@ -1,14 +1,8 @@
 """
 oemof application for research project quarree100.
 
-Adaption of the oemof_examples repository:
+Based on the excel_reader example of oemof_examples repository:
 https://github.com/oemof/oemof-examples
--> excel_reader
-
-5.1.2018 - uwe.krien@rl-institut.de
-7.5.2018 - jonathan.amme@rl-institut.de
-
-01-2019 - johannes.roeder@uni-bremen.de
 
 SPDX-License-Identifier: GPL-3.0-or-later
 """
@@ -19,6 +13,8 @@ import oemof.solph as solph
 import oemof.outputlib as outputlib
 import logging
 import pandas as pd
+import numpy as np
+from customized import add_contraints
 
 
 def nodes_from_excel(filename):
@@ -90,11 +86,21 @@ def create_nodes(nd=None):
     # Create Source objects from table 'Sources'
     for i, cs in nd['commodity_sources'].iterrows():
         if cs['active']:
+
+            outflow_args = {'variable_costs': cs['variable costs']}
+
+            if cs['emission_series']:
+                for col in nd['timeseries'].columns.values:
+                    if col.split('.')[0] == cs['label']:
+                        outflow_args['emission_factor'] = nd['timeseries'][col]
+            else:
+                outflow_args['emission_factor'] = \
+                    np.full(nd['general']['timesteps'][0], cs['emissions'])
+
             nodes.append(
-                solph.Source(label=cs['label'],
-                             outputs={busd[cs['to']]: solph.Flow(
-                                 variable_costs=cs['variable costs'],
-                                 emission=cs['emissions'])})
+                solph.Source(
+                    label=cs['label'],
+                    outputs={busd[cs['to']]: solph.Flow(**outflow_args)})
                 )
 
     # Create Source objects with fixed time series from 'renewables' table
@@ -246,8 +252,8 @@ def solve_es(energysystem=None, excel_nodes=None):
     om = solph.Model(energysystem)
 
     # Global CONSTRAINTS: CO2 Limit
-    solph.constraints.emission_limit(
-        om, flows=None, limit=excel_nodes['general']['emission limit'][0])
+    add_contraints.emission_limit_dyn(
+        om, limit=excel_nodes['general']['emission limit'][0])
 
     logging.info('Solve the optimization problem')
     # if tee_switch is true solver messages will be displayed

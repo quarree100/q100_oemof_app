@@ -1,8 +1,15 @@
+"""
+oemof application for research project quarree100.
+
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
+
 from oemof.tools import logger
 import oemof.solph as solph
 import oemof.outputlib as outputlib
 import logging
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from customized import add_contraints
 
@@ -13,7 +20,8 @@ def test_dyn_emission_example():
 
     number_timesteps = 11
 
-    date_time_index = pd.date_range('1/1/2012', periods=number_timesteps, freq='H')
+    date_time_index = pd.date_range('1/1/2012', periods=number_timesteps,
+                                    freq='H')
 
     es = solph.EnergySystem(timeindex=date_time_index)
 
@@ -21,18 +29,24 @@ def test_dyn_emission_example():
     logging.info('Create oemof objects')
 
     # create electricity bus
-    bel = solph.Bus(label='bel')
+    bel = solph.Bus(label='label_bel')
 
     # add bgas and bel to energysystem
     es.add(bel)
 
     # create source object representing the electricity net
-    elec_fossil = solph.Source(label='elec_net_fossil',
-                               outputs={bel: solph.Flow(variable_costs=10)})
+    elec_fossil = solph.Source(
+        label='elec_net_fossil',
+        outputs={bel: solph.Flow(variable_costs=10,
+                                 emission_factor=[0.7, 0.7, 0.7, 0.7, 0.1, 0.5,
+                                                  1, 1.3, 0.7, 0.7, 0.7])})
 
     # create source object representing the electricity net
     es.add(solph.Source(label='elec_net_green',
-                        outputs={bel: solph.Flow(variable_costs=30)}))
+                        outputs={bel: solph.Flow(
+                            variable_costs=30,
+                            emission_factor=np.full(11, 0.01)
+                        )}))
 
     # create simple sink object representing the electrical demand
     es.add(solph.Sink(label='demand_el',
@@ -48,7 +62,17 @@ def test_dyn_emission_example():
     # initialise the operational model
     om = solph.Model(energysystem=es)
 
-    # add specific emission values as a list to flow objects
+    """
+    Alterantive way of adding the emission factor:
+    
+    om.flows['label_bel', 'demand_el'].emission_factor =\
+        [0.01 for i in range(0, number_timesteps)]
+
+    om.flows[elec_fossil, bel].emission_factor = [
+        0.7, 0.7, 0.7, 0.7, 0.1, 0.5, 1, 1.3, 0.7, 0.7, 0.7]
+    
+    Or:
+    ----
     for i, o in om.flows.keys():
         if i is bel:
             om.flows[i, o].emission_factor =\
@@ -56,10 +80,12 @@ def test_dyn_emission_example():
         if i is elec_fossil:
             om.flows[i, o].emission_factor =\
                 [0.7, 0.7, 0.7, 0.7, 0.1, 0.5, 1, 1.3, 0.7, 0.7, 0.7]
+    """
 
+    # actual adding of emission constraint
     add_contraints.emission_limit_dyn(om, limit=15)
 
-    # Ausgabe der verwendeten Emissions Faktoren:
+    # printing the emissions factors
     for (i, o) in om.flows:
         if hasattr(om.flows[i, o], 'emission_factor'):
             print('EMISSIONS')
@@ -73,11 +99,11 @@ def test_dyn_emission_example():
     results = outputlib.processing.results(om)
 
     # get all variables of a specific component/bus
-    electricity_bus = outputlib.views.node(results, 'bel')["sequences"]
+    electricity_bus = outputlib.views.node(results, 'label_bel')["sequences"]
 
     # plot the time series (sequences) of a specific component/bus
     if plt is not None:
-        ax = electricity_bus.plot(kind='line', drawstyle='steps-mid',
+        electricity_bus.plot(kind='line', drawstyle='steps-mid',
                                   legend='right')
         plt.show()
 

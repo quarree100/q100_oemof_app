@@ -31,7 +31,7 @@ def emission_limit_dyn(om, flows=None, limit=None):
         Absolute emission limit for the energy system.
     Note
     ----
-    Flow objects required an emission attribute!
+    Flow objects required an emission_factor attribute!
     """
     if flows is None:
         flows = {}

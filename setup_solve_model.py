@@ -27,6 +27,7 @@ def nodes_from_excel(filename):
                   'demand': xls.parse('Demand'),
                   'transformers_siso': xls.parse('Transformer_siso'),
                   'transformers_sido': xls.parse('Transformer_sido'),
+                  'transformers_diso': xls.parse('Transformer_diso'),
                   'storages': xls.parse('Storages'),
                   'timeseries': xls.parse('Timeseries'),
                   'general': xls.parse('General')
@@ -214,6 +215,45 @@ def create_nodes(nd=None):
                         conversion_factors={
                             busd[tdo['to_1']]: tdo['efficiency_1'],
                             busd[tdo['to_2']]: tdo['efficiency_2']
+                        })
+                )
+
+    for i, tdiso in nd['transformers_diso'].iterrows():
+        if tdiso['active']:
+            if tdiso['invest']:
+                # calculation epc
+                epc_tdiso = economics.annuity(
+                    capex=tdiso['capex'], n=tdiso['n'],
+                    wacc=nd['general']['interest rate'][0]) *\
+                      nd['general']['timesteps'][0] / 8760
+
+                # create
+                nodes.append(
+                    solph.Transformer(
+                        label=tdiso['label'],
+                        inputs={busd[tdiso['from_1']]: solph.Flow(),
+                                busd[tdiso['from_2']]: solph.Flow()},
+                        outputs={busd[tdiso['to_1']]: solph.Flow(
+                            investment=solph.Investment(ep_costs=epc_tdiso))},
+                        conversion_factors={
+                            busd[tdiso['from_1']]: tdiso['eff_in_1'],
+                            busd[tdiso['from_2']]: tdiso['eff_in_2'],
+                            busd[tdiso['to_1']]: tdiso['eff_out_1']
+                        })
+                )
+
+            else:
+                nodes.append(
+                    solph.Transformer(
+                        label=tdiso['label'],
+                        inputs={busd[tdiso['from_1']]: solph.Flow(),
+                                busd[tdiso['from_2']]: solph.Flow()},
+                        outputs={busd[tdiso['to_1']]: solph.Flow(
+                            nominal_value=tdiso['installed'])},
+                        conversion_factors={
+                            busd[tdiso['from_1']]: tdiso['eff_in_1'],
+                            busd[tdiso['from_2']]: tdiso['eff_in_2'],
+                            busd[tdiso['to_1']]: tdiso['eff_out_1']
                         })
                 )
 

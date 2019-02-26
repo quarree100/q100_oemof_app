@@ -10,10 +10,14 @@ import setup_solve_model
 import postprocessing
 import config as cfg
 import os
+import oemof.outputlib as outputlib
 
 # getting path to data from ini file
 path_to_data = os.path.join(os.path.expanduser("~"),
                             cfg.get('paths', 'data'))
+
+path_to_results = os.path.join(os.path.expanduser("~"),
+                            cfg.get('paths', 'results'))
 
 filename = os.path.join(
     os.path.expanduser("~"), path_to_data, 'Parameter_AB1.xlsx')
@@ -27,17 +31,23 @@ e_sys = setup_solve_model.setup_es(excel_nodes=node_data)
 # optimising the energy system
 results = setup_solve_model.solve_es(energysystem=e_sys, excel_nodes=node_data)
 
+# add results to the energy system to make it possible to store them.
+e_sys.results['main'] = results
+
+# store energy system with results
+e_sys.dump(dpath=path_to_results, filename='test_results')
+
 # plot the buses
 postprocessing.plot_buses(res=results, es=e_sys)
 
 # plot the investments in transformer
-postprocessing.plot_trans_invest(res=results, es=e_sys)
+# postprocessing.plot_trans_invest(res=results, es=e_sys)
 
 # plot the storage SoC(t)
 postprocessing.plot_storages_soc(res=results, es=e_sys)
 
 # plot the installed storage capacities
-postprocessing.plot_storages_invest(res=results, es=e_sys)
+# postprocessing.plot_storages_invest(res=results, es=e_sys)
 
 # expoprt the results to excel
-postprocessing.export_excel(res=results, es=e_sys)
+# postprocessing.export_excel(res=results, es=e_sys)

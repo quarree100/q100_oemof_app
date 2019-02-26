@@ -141,72 +141,117 @@ def create_nodes(nd=None):
 
     # Create Transformer objects from 'transformers' table
     for i, t in nd['transformers_siso'].iterrows():
-        if t['active'] and t['invest']:
+        if t['active']:
 
-            # calculation epc
-            epc_t = economics.annuity(
-                capex=t['capex'], n=t['n'],
-                wacc=nd['general']['interest rate'][0]) * \
-                    nd['general']['timesteps'][0] / 8760
+            if t['invest']:
 
-            # create
-            nodes.append(
-                solph.Transformer(
-                    label=t['label'],
-                    inputs={busd[t['from']]: solph.Flow()},
-                    outputs={busd[t['to']]: solph.Flow(
-                        variable_costs=t['variable costs'],
-                        emissions=['emissions'],
-                        investment=solph.Investment(
-                            ep_costs=epc_t))},
-                    conversion_factors={busd[t['to']]: t['efficiency']})
-            )
+                # calculation epc
+                epc_t = economics.annuity(
+                    capex=t['capex'], n=t['n'],
+                    wacc=nd['general']['interest rate'][0]) * \
+                        nd['general']['timesteps'][0] / 8760
+
+                # create
+                nodes.append(
+                    solph.Transformer(
+                        label=t['label'],
+                        inputs={busd[t['from']]: solph.Flow()},
+                        outputs={busd[t['to']]: solph.Flow(
+                            variable_costs=t['variable costs'],
+                            emissions=['emissions'],
+                            investment=solph.Investment(
+                                ep_costs=epc_t))},
+                        conversion_factors={busd[t['to']]: t['efficiency']})
+                )
+
+            else:
+                # create
+                nodes.append(
+                    solph.Transformer(
+                        label=t['label'],
+                        inputs={busd[t['from']]: solph.Flow()},
+                        outputs={busd[t['to']]: solph.Flow(
+                            nominal_value=t['installed'],
+                            variable_costs=t['variable costs'],
+                            emissions=['emissions'])},
+                        conversion_factors={busd[t['to']]: t['efficiency']})
+                )
 
     for i, tdo in nd['transformers_sido'].iterrows():
         if tdo['active']:
-            # calculation epc
-            epc_tdo = economics.annuity(
-                capex=tdo['capex'], n=tdo['n'],
-                wacc=nd['general']['interest rate'][0]) *\
-                  nd['general']['timesteps'][0] / 8760
+            if tdo['invest']:
+                # calculation epc
+                epc_tdo = economics.annuity(
+                    capex=tdo['capex'], n=tdo['n'],
+                    wacc=nd['general']['interest rate'][0]) *\
+                      nd['general']['timesteps'][0] / 8760
 
-            # create
-            nodes.append(
-                solph.Transformer(
-                    label=tdo['label'],
-                    inputs={busd[tdo['from']]: solph.Flow()},
-                    outputs={busd[tdo['to_1']]: solph.Flow(
-                        investment=solph.Investment(ep_costs=epc_tdo)),
-                        busd[tdo['to_2']]: solph.Flow()
-                    },
-                    conversion_factors={
-                        busd[tdo['to_1']]: tdo['efficiency_1'],
-                        busd[tdo['to_2']]: tdo['efficiency_2']
-                    })
-            )
+                # create
+                nodes.append(
+                    solph.Transformer(
+                        label=tdo['label'],
+                        inputs={busd[tdo['from']]: solph.Flow()},
+                        outputs={busd[tdo['to_1']]: solph.Flow(
+                            investment=solph.Investment(ep_costs=epc_tdo)),
+                            busd[tdo['to_2']]: solph.Flow()
+                        },
+                        conversion_factors={
+                            busd[tdo['to_1']]: tdo['efficiency_1'],
+                            busd[tdo['to_2']]: tdo['efficiency_2']
+                        })
+                )
+
+            else:
+                nodes.append(
+                    solph.Transformer(
+                        label=tdo['label'],
+                        inputs={busd[tdo['from']]: solph.Flow()},
+                        outputs={
+                            busd[tdo['to_1']]: solph.Flow(
+                                nominal_value=tdo['installed']),
+                            busd[tdo['to_2']]: solph.Flow()
+                        },
+                        conversion_factors={
+                            busd[tdo['to_1']]: tdo['efficiency_1'],
+                            busd[tdo['to_2']]: tdo['efficiency_2']
+                        })
+                )
 
     for i, s in nd['storages'].iterrows():
         if s['active']:
-            # calculate epc
-            epc_s = economics.annuity(
-                capex=s['capex'], n=s['n'],
-                wacc=nd['general']['interest rate'][0]) * \
-                    nd['general']['timesteps'][0] / 8760
+            if s['invest']:
+                # calculate epc
+                epc_s = economics.annuity(
+                    capex=s['capex'], n=s['n'],
+                    wacc=nd['general']['interest rate'][0]) * \
+                        nd['general']['timesteps'][0] / 8760
 
-            # create Storages
-            nodes.append(
-                solph.components.GenericStorage(
-                    label=s['label'],
-                    inputs={busd[s['bus']]: solph.Flow()},
-                    outputs={busd[s['bus']]: solph.Flow()},
-                    capacity_loss=s['capacity_loss'],
-                    invest_relation_input_capacity=s[
-                        'invest_relation_input_capacity'],
-                    invest_relation_output_capacity=s[
-                        'invest_relation_output_capacity'],
-                    inflow_conversion_factor=s['inflow_conversion_factor'],
-                    outflow_conversion_factor=s['outflow_conversion_factor'],
-                    investment=solph.Investment(ep_costs=epc_s)))
+                # create Storages
+                nodes.append(
+                    solph.components.GenericStorage(
+                        label=s['label'],
+                        inputs={busd[s['bus']]: solph.Flow()},
+                        outputs={busd[s['bus']]: solph.Flow()},
+                        capacity_loss=s['capacity_loss'],
+                        invest_relation_input_capacity=s[
+                            'invest_relation_input_capacity'],
+                        invest_relation_output_capacity=s[
+                            'invest_relation_output_capacity'],
+                        inflow_conversion_factor=s['inflow_conversion_factor'],
+                        outflow_conversion_factor=s['outflow_conversion_factor'],
+                        investment=solph.Investment(ep_costs=epc_s)))
+            else:
+                # create Storages
+                nodes.append(
+                    solph.components.GenericStorage(
+                        label=s['label'],
+                        inputs={busd[s['bus']]: solph.Flow()},
+                        outputs={busd[s['bus']]: solph.Flow()},
+                        capacity_loss=s['capacity_loss'],
+                        nominal_capacity=s['capacity'],
+                        inflow_conversion_factor=s['inflow_conversion_factor'],
+                        outflow_conversion_factor=s['outflow_conversion_factor'],
+                        ))
 
     return nodes
 

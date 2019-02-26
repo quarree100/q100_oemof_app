@@ -45,8 +45,9 @@ def plot_trans_invest(res=None, es=None):
     p_trans_install = []
 
     for q in l_transformer:
-        p_install = outputlib.views.node(res, q)["scalars"][0]
-        p_trans_install.append(p_install)
+        if outputlib.views.node(res, q)["scalars"][0] is not None:
+            p_install = outputlib.views.node(res, q)["scalars"][0]
+            p_trans_install.append(p_install)
 
     # plot the installed Transformer Capacities
     y = p_trans_install

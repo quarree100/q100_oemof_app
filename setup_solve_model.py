@@ -141,7 +141,7 @@ def create_nodes(nd=None):
 
     # Create Transformer objects from 'transformers' table
     for i, t in nd['transformers_siso'].iterrows():
-        if t['active']:
+        if t['active'] and t['invest']:
 
             # calculation epc
             epc_t = economics.annuity(

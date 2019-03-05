@@ -29,7 +29,7 @@ path_to_results = os.path.join(os.path.expanduser("~"),
                             cfg.get('paths', 'results'))
 
 filename = os.path.join(
-    os.path.expanduser("~"), path_to_data, 'Parameter_AB1.xlsx')
+    os.path.expanduser("~"), path_to_data, 'Parameter_AB1_Var2.xlsx')
 
 # reading data from excel file with data read function
 node_data = setup_solve_model.nodes_from_excel(filename)
@@ -85,7 +85,8 @@ def print_buses(res=None, es=None):
 
 print_buses(res=e_sys.results['main'], es=e_sys)
 
-
+print('Total Emission [kg]')
+print(om.total_emissions())
 # plot the investments in transformer
 # postprocessing.plot_trans_invest(res=results, es=e_sys)
 

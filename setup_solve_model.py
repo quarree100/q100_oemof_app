@@ -25,9 +25,11 @@ def nodes_from_excel(filename):
                   'commodity_sources': xls.parse('Sources'),
                   'sources_series': xls.parse('Sources_series'),
                   'demand': xls.parse('Demand'),
+                  'sinks': xls.parse('Sinks'),
                   'transformers_siso': xls.parse('Transformer_siso'),
                   'transformers_sido': xls.parse('Transformer_sido'),
                   'transformers_diso': xls.parse('Transformer_diso'),
+                  'transformers_dido': xls.parse('Transformer_dido'),
                   'storages': xls.parse('Storages'),
                   'timeseries': xls.parse('Timeseries'),
                   'general': xls.parse('General')
@@ -140,6 +142,19 @@ def create_nodes(nd=None):
                                busd[de['from']]: solph.Flow(**inflow_args)})
             )
 
+    # Create further sink objects
+    for i, sk in nd['sinks'].iterrows():
+        if sk['active']:
+
+            # create
+            nodes.append(
+                solph.Sink(
+                    label=sk['label'], inputs={busd[sk['from']]: solph.Flow(
+                        variable_costs=sk['price'],
+                        nominal_value=sk['p_max'],
+                        summed_max=sk['total_max'])})
+            )
+
     # Create Transformer objects from 'transformers' table
     for i, t in nd['transformers_siso'].iterrows():
         if t['active']:
@@ -173,6 +188,7 @@ def create_nodes(nd=None):
                         inputs={busd[t['from']]: solph.Flow()},
                         outputs={busd[t['to']]: solph.Flow(
                             nominal_value=t['installed'],
+                            summed_max=t['from_sum_max'],
                             variable_costs=t['variable costs'],
                             emissions=['emissions'])},
                         conversion_factors={busd[t['to']]: t['efficiency']})
@@ -254,6 +270,51 @@ def create_nodes(nd=None):
                             busd[tdiso['from_1']]: tdiso['eff_in_1'],
                             busd[tdiso['from_2']]: tdiso['eff_in_2'],
                             busd[tdiso['to_1']]: tdiso['eff_out_1']
+                        })
+                )
+
+    for i, tdido in nd['transformers_dido'].iterrows():
+        if tdido['active']:
+            if tdido['invest']:
+                # calculation epc
+                epc_tdido = economics.annuity(
+                    capex=tdido['capex'], n=tdido['n'],
+                    wacc=nd['general']['interest rate'][0]) *\
+                      nd['general']['timesteps'][0] / 8760
+
+                # create
+                nodes.append(
+                    solph.Transformer(
+                        label=tdido['label'],
+                        inputs={busd[tdido['from_1']]: solph.Flow(),
+                                busd[tdido['from_2']]: solph.Flow()},
+                        outputs={busd[tdido['to_1']]: solph.Flow(
+                            investment=solph.Investment(ep_costs=epc_tdido)),
+                            busd[tdido['to_2']]: solph.Flow()},
+                        conversion_factors={
+                            busd[tdido['from_1']]: tdido['eff_in_1'],
+                            busd[tdido['from_2']]: tdido['eff_in_2'],
+                            busd[tdido['to_1']]: tdido['eff_out_1'],
+                            busd[tdido['to_2']]: tdido['eff_out_2']
+                        })
+                )
+
+            else:
+                nodes.append(
+                    solph.Transformer(
+                        label=tdido['label'],
+                        inputs={busd[tdido['from_1']]: solph.Flow(
+                            nominal_value=tdido['installed'],
+                            summed_max=tdido['from_1_sum_max']
+                        ),
+                                busd[tdido['from_2']]: solph.Flow()},
+                        outputs={busd[tdido['to_1']]: solph.Flow(),
+                            busd[tdido['to_2']]: solph.Flow()},
+                        conversion_factors={
+                            busd[tdido['from_1']]: tdido['eff_in_1'],
+                            busd[tdido['from_2']]: tdido['eff_in_2'],
+                            busd[tdido['to_1']]: tdido['eff_out_1'],
+                            busd[tdido['to_2']]: tdido['eff_out_2']
                         })
                 )
 

@@ -11,7 +11,6 @@ import postprocessing
 import config as cfg
 import os
 import pprint as pp
-import oemof.outputlib as outputlib
 from oemof.tools import logger
 from oemof.tools import economics
 import oemof.solph as solph

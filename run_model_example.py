@@ -25,11 +25,14 @@ from matplotlib import pyplot as plt
 path_to_data = os.path.join(os.path.expanduser("~"),
                             cfg.get('paths', 'data'))
 
-path_to_results = os.path.join(os.path.expanduser("~"),
-                            cfg.get('paths', 'results'))
+# getting path to data from IFAM owncloud
+# path_to_data = 'ownCloud/FhG-owncloud-Quarree-AB3/oemof_AB1/Daten/'
+
+# path_to_results = os.path.join(os.path.expanduser("~"),
+#                             cfg.get('paths', 'results'))
 
 filename = os.path.join(
-    os.path.expanduser("~"), path_to_data, 'Parameter_AB1_Var2.xlsx')
+    os.path.expanduser("~"), path_to_data, 'Parameter_AB1_Var2-b_opt.xlsx')
 
 # reading data from excel file with data read function
 node_data = setup_solve_model.nodes_from_excel(filename)
@@ -60,7 +63,7 @@ e_sys.results['main'] = outputlib.processing.results(om)
 e_sys.results['meta'] = outputlib.processing.meta_results(om)
 
 # store energy system with results
-e_sys.dump(dpath=path_to_results, filename='test_results')
+# e_sys.dump(dpath=path_to_results, filename='test_results')
 
 # plot the buses
 postprocessing.plot_buses(res=e_sys.results['main'], es=e_sys)

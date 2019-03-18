@@ -26,10 +26,7 @@ def nodes_from_excel(filename):
                   'sources_series': xls.parse('Sources_series'),
                   'demand': xls.parse('Demand'),
                   'sinks': xls.parse('Sinks'),
-                  'transformers_siso': xls.parse('Transformer_siso'),
-                  'transformers_sido': xls.parse('Transformer_sido'),
-                  'transformers_diso': xls.parse('Transformer_diso'),
-                  'transformers_dido': xls.parse('Transformer_dido'),
+                  'transformer': xls.parse('Transformer'),
                   'storages': xls.parse('Storages'),
                   'timeseries': xls.parse('Timeseries'),
                   'general': xls.parse('General')
@@ -90,7 +87,14 @@ def create_nodes(nd=None):
     for i, cs in nd['commodity_sources'].iterrows():
         if cs['active']:
 
-            outflow_args = {'variable_costs': cs['variable costs']}
+            outflow_args = {}
+
+            if cs['cost_series']:
+                for col in nd['timeseries'].columns.values:
+                    if col.split('..')[0] == cs['label']:
+                        outflow_args['variable_costs'] = nd['timeseries'][col]
+            else:
+                outflow_args['variable_costs'] = cs['variable costs']
 
             if cs['emission_series']:
                 for col in nd['timeseries'].columns.values:
@@ -146,177 +150,200 @@ def create_nodes(nd=None):
     for i, sk in nd['sinks'].iterrows():
         if sk['active']:
 
-            # create
+            outflow_args = {'nominal_value': sk['p_max'],
+                            'summed_max': sk['total_max']}
+
+            if sk['cost_series']:
+                for col in nd['timeseries'].columns.values:
+                    if col.split('..')[0] == sk['label']:
+                        outflow_args['variable_costs'] = nd['timeseries'][col]
+            else:
+                outflow_args['variable_costs'] = sk['variable_costs']
+
+            if sk['emission_series']:
+                for col in nd['timeseries'].columns.values:
+                    if col.split('.')[0] == sk['label']:
+                        outflow_args['emission_factor'] = nd['timeseries'][col]
+            else:
+                outflow_args['emission_factor'] = \
+                    np.full(nd['general']['timesteps'][0], sk['emissions'])
+
             nodes.append(
                 solph.Sink(
                     label=sk['label'], inputs={busd[sk['from']]: solph.Flow(
-                        variable_costs=sk['price'],
-                        nominal_value=sk['p_max'],
-                        summed_max=sk['total_max'])})
+                        **outflow_args)})
             )
 
     # Create Transformer objects from 'transformers' table
-    for i, t in nd['transformers_siso'].iterrows():
+    for i, t in nd['transformer'].iterrows():
         if t['active']:
 
-            if t['invest']:
+            # Transformer with 1 Input and 1 Output
+            if t['in_2'] == 0 and t['out_2'] == 0:
 
-                # calculation epc
-                epc_t = economics.annuity(
-                    capex=t['capex'], n=t['n'],
-                    wacc=nd['general']['interest rate'][0]) * \
-                        nd['general']['timesteps'][0] / 8760
+                if t['invest']:
 
-                # create
-                nodes.append(
-                    solph.Transformer(
-                        label=t['label'],
-                        inputs={busd[t['from']]: solph.Flow()},
-                        outputs={busd[t['to']]: solph.Flow(
-                            variable_costs=t['variable costs'],
-                            emissions=['emissions'],
-                            investment=solph.Investment(
-                                ep_costs=epc_t))},
-                        conversion_factors={busd[t['to']]: t['efficiency']})
-                )
+                    # calculation epc
+                    epc_t = economics.annuity(
+                        capex=t['capex'], n=t['n'],
+                        wacc=nd['general']['interest rate'][0]) * \
+                            nd['general']['timesteps'][0] / 8760
 
-            else:
-                # create
-                nodes.append(
-                    solph.Transformer(
-                        label=t['label'],
-                        inputs={busd[t['from']]: solph.Flow()},
-                        outputs={busd[t['to']]: solph.Flow(
-                            nominal_value=t['installed'],
-                            summed_max=t['from_sum_max'],
-                            variable_costs=t['variable costs'],
-                            emissions=['emissions'])},
-                        conversion_factors={busd[t['to']]: t['efficiency']})
-                )
+                    # create
+                    nodes.append(
+                        solph.Transformer(
+                            label=t['label'],
+                            inputs={busd[t['in_1']]: solph.Flow()},
+                            outputs={busd[t['out_1']]: solph.Flow(
+                                variable_costs=t['variable costs'],
+                                emissions=['emissions'],
+                                investment=solph.Investment(
+                                    ep_costs=epc_t))},
+                            conversion_factors={
+                                busd[t['out_1']]: t['eff_out_1']})
+                    )
 
-    for i, tdo in nd['transformers_sido'].iterrows():
-        if tdo['active']:
-            if tdo['invest']:
-                # calculation epc
-                epc_tdo = economics.annuity(
-                    capex=tdo['capex'], n=tdo['n'],
-                    wacc=nd['general']['interest rate'][0]) *\
-                      nd['general']['timesteps'][0] / 8760
+                else:
+                    # create
+                    nodes.append(
+                        solph.Transformer(
+                            label=t['label'],
+                            inputs={busd[t['in_1']]: solph.Flow()},
+                            outputs={busd[t['out_1']]: solph.Flow(
+                                nominal_value=t['installed'],
+                                summed_max=t['in_1_sum_max'],
+                                variable_costs=t['variable costs'],
+                                emissions=['emissions'])},
+                            conversion_factors={
+                                busd[t['out_1']]: t['eff_out_1']})
+                    )
 
-                # create
-                nodes.append(
-                    solph.Transformer(
-                        label=tdo['label'],
-                        inputs={busd[tdo['from']]: solph.Flow()},
-                        outputs={busd[tdo['to_1']]: solph.Flow(
-                            investment=solph.Investment(ep_costs=epc_tdo)),
-                            busd[tdo['to_2']]: solph.Flow()
-                        },
-                        conversion_factors={
-                            busd[tdo['to_1']]: tdo['efficiency_1'],
-                            busd[tdo['to_2']]: tdo['efficiency_2']
-                        })
-                )
+            # Transformer with 1 Input and 2 Output
+            if t['in_2'] == 0 and t['out_2'] != 0:
 
-            else:
-                nodes.append(
-                    solph.Transformer(
-                        label=tdo['label'],
-                        inputs={busd[tdo['from']]: solph.Flow()},
-                        outputs={
-                            busd[tdo['to_1']]: solph.Flow(
-                                nominal_value=tdo['installed']),
-                            busd[tdo['to_2']]: solph.Flow()
-                        },
-                        conversion_factors={
-                            busd[tdo['to_1']]: tdo['efficiency_1'],
-                            busd[tdo['to_2']]: tdo['efficiency_2']
-                        })
-                )
+                if t['invest']:
+                    # calculation epc
+                    epc_t = economics.annuity(
+                        capex=t['capex'], n=t['n'],
+                        wacc=nd['general']['interest rate'][0]) *\
+                          nd['general']['timesteps'][0] / 8760
 
-    for i, tdiso in nd['transformers_diso'].iterrows():
-        if tdiso['active']:
-            if tdiso['invest']:
-                # calculation epc
-                epc_tdiso = economics.annuity(
-                    capex=tdiso['capex'], n=tdiso['n'],
-                    wacc=nd['general']['interest rate'][0]) *\
-                      nd['general']['timesteps'][0] / 8760
+                    # create
+                    nodes.append(
+                        solph.Transformer(
+                            label=t['label'],
+                            inputs={busd[t['in_1']]: solph.Flow()},
+                            outputs={busd[t['out_1']]: solph.Flow(
+                                investment=solph.Investment(ep_costs=epc_t)),
+                                busd[t['out_2']]: solph.Flow()
+                            },
+                            conversion_factors={
+                                busd[t['out_1']]: t['eff_out_1'],
+                                busd[t['out_2']]: t['eff_out_2']
+                            })
+                    )
 
-                # create
-                nodes.append(
-                    solph.Transformer(
-                        label=tdiso['label'],
-                        inputs={busd[tdiso['from_1']]: solph.Flow(),
-                                busd[tdiso['from_2']]: solph.Flow()},
-                        outputs={busd[tdiso['to_1']]: solph.Flow(
-                            investment=solph.Investment(ep_costs=epc_tdiso))},
-                        conversion_factors={
-                            busd[tdiso['from_1']]: tdiso['eff_in_1'],
-                            busd[tdiso['from_2']]: tdiso['eff_in_2'],
-                            busd[tdiso['to_1']]: tdiso['eff_out_1']
-                        })
-                )
+                else:
+                    nodes.append(
+                        solph.Transformer(
+                            label=t['label'],
+                            inputs={busd[t['in_1']]: solph.Flow()},
+                            outputs={
+                                busd[t['out_1']]: solph.Flow(
+                                    nominal_value=t['installed']),
+                                busd[t['out_2']]: solph.Flow()
+                            },
+                            conversion_factors={
+                                busd[t['out_1']]: t['eff_out_1'],
+                                busd[t['out_2']]: t['eff_out_2']
+                            })
+                    )
 
-            else:
-                nodes.append(
-                    solph.Transformer(
-                        label=tdiso['label'],
-                        inputs={busd[tdiso['from_1']]: solph.Flow(),
-                                busd[tdiso['from_2']]: solph.Flow()},
-                        outputs={busd[tdiso['to_1']]: solph.Flow(
-                            nominal_value=tdiso['installed'])},
-                        conversion_factors={
-                            busd[tdiso['from_1']]: tdiso['eff_in_1'],
-                            busd[tdiso['from_2']]: tdiso['eff_in_2'],
-                            busd[tdiso['to_1']]: tdiso['eff_out_1']
-                        })
-                )
+            # Transformer with 2 Input and 1 Output
+            if t['in_2'] != 0 and t['out_2'] == 0:
 
-    for i, tdido in nd['transformers_dido'].iterrows():
-        if tdido['active']:
-            if tdido['invest']:
-                # calculation epc
-                epc_tdido = economics.annuity(
-                    capex=tdido['capex'], n=tdido['n'],
-                    wacc=nd['general']['interest rate'][0]) *\
-                      nd['general']['timesteps'][0] / 8760
+                if t['invest']:
+                    # calculation epc
+                    epc_t = economics.annuity(
+                        capex=t['capex'], n=t['n'],
+                        wacc=nd['general']['interest rate'][0]) *\
+                          nd['general']['timesteps'][0] / 8760
 
-                # create
-                nodes.append(
-                    solph.Transformer(
-                        label=tdido['label'],
-                        inputs={busd[tdido['from_1']]: solph.Flow(),
-                                busd[tdido['from_2']]: solph.Flow()},
-                        outputs={busd[tdido['to_1']]: solph.Flow(
-                            investment=solph.Investment(ep_costs=epc_tdido)),
-                            busd[tdido['to_2']]: solph.Flow()},
-                        conversion_factors={
-                            busd[tdido['from_1']]: tdido['eff_in_1'],
-                            busd[tdido['from_2']]: tdido['eff_in_2'],
-                            busd[tdido['to_1']]: tdido['eff_out_1'],
-                            busd[tdido['to_2']]: tdido['eff_out_2']
-                        })
-                )
+                    # create
+                    nodes.append(
+                        solph.Transformer(
+                            label=t['label'],
+                            inputs={busd[t['in_1']]: solph.Flow(),
+                                    busd[t['in_2']]: solph.Flow()},
+                            outputs={busd[t['out_1']]: solph.Flow(
+                                investment=solph.Investment(ep_costs=epc_t))},
+                            conversion_factors={
+                                busd[t['in_1']]: t['eff_in_1'],
+                                busd[t['in_2']]: t['eff_in_2'],
+                                busd[t['out_1']]: t['eff_out_1']
+                            })
+                    )
 
-            else:
-                nodes.append(
-                    solph.Transformer(
-                        label=tdido['label'],
-                        inputs={busd[tdido['from_1']]: solph.Flow(
-                            nominal_value=tdido['installed'],
-                            summed_max=tdido['from_1_sum_max']
-                        ),
-                                busd[tdido['from_2']]: solph.Flow()},
-                        outputs={busd[tdido['to_1']]: solph.Flow(),
-                            busd[tdido['to_2']]: solph.Flow()},
-                        conversion_factors={
-                            busd[tdido['from_1']]: tdido['eff_in_1'],
-                            busd[tdido['from_2']]: tdido['eff_in_2'],
-                            busd[tdido['to_1']]: tdido['eff_out_1'],
-                            busd[tdido['to_2']]: tdido['eff_out_2']
-                        })
-                )
+                else:
+                    nodes.append(
+                        solph.Transformer(
+                            label=t['label'],
+                            inputs={busd[t['in_1']]: solph.Flow(),
+                                    busd[t['in_2']]: solph.Flow()},
+                            outputs={busd[t['out_1']]: solph.Flow(
+                                nominal_value=t['installed'])},
+                            conversion_factors={
+                                busd[t['in_1']]: t['eff_in_1'],
+                                busd[t['in_2']]: t['eff_in_2'],
+                                busd[t['out_1']]: t['eff_out_1']
+                            })
+                    )
+
+            # Transformer with 2 Input and 2 Output
+            if t['in_2'] != 0 and t['out_2'] != 0:
+
+                if t['invest']:
+                    # calculation epc
+                    epc_t = economics.annuity(
+                        capex=t['capex'], n=t['n'],
+                        wacc=nd['general']['interest rate'][0]) *\
+                          nd['general']['timesteps'][0] / 8760
+
+                    # create
+                    nodes.append(
+                        solph.Transformer(
+                            label=t['label'],
+                            inputs={busd[t['in_1']]: solph.Flow(),
+                                    busd[t['in_2']]: solph.Flow()},
+                            outputs={busd[t['out_1']]: solph.Flow(
+                                investment=solph.Investment(ep_costs=epc_t)),
+                                busd[t['out_2']]: solph.Flow()},
+                            conversion_factors={
+                                busd[t['in_1']]: t['eff_in_1'],
+                                busd[t['in_2']]: t['eff_in_2'],
+                                busd[t['out_1']]: t['eff_out_1'],
+                                busd[t['out_2']]: t['eff_out_2']
+                            })
+                    )
+
+                else:
+                    nodes.append(
+                        solph.Transformer(
+                            label=t['label'],
+                            inputs={busd[t['in_1']]: solph.Flow(
+                                nominal_value=t['installed'],
+                                summed_max=t['in_1_sum_max']
+                            ),
+                                    busd[t['in_2']]: solph.Flow()},
+                            outputs={busd[t['out_1']]: solph.Flow(),
+                                busd[t['out_2']]: solph.Flow()},
+                            conversion_factors={
+                                busd[t['in_1']]: t['eff_in_1'],
+                                busd[t['in_2']]: t['eff_in_2'],
+                                busd[t['out_1']]: t['eff_out_1'],
+                                busd[t['out_2']]: t['eff_out_2']
+                            })
+                    )
 
     for i, s in nd['storages'].iterrows():
         if s['active']:
@@ -364,7 +391,7 @@ def setup_es(excel_nodes=None):
 
     number_timesteps = excel_nodes['general']['timesteps'][0]
 
-    date_time_index = pd.date_range('1/1/2016',
+    date_time_index = pd.date_range('1/1/2018',
                                     periods=number_timesteps,
                                     freq='H')
     energysystem = solph.EnergySystem(timeindex=date_time_index)

@@ -32,7 +32,7 @@ path_to_data = os.path.join(os.path.expanduser("~"),
 #                             cfg.get('paths', 'results'))
 
 filename = os.path.join(
-    os.path.expanduser("~"), path_to_data, 'Parameter_AB1_Var2-b_opt.xlsx')
+    os.path.expanduser("~"), path_to_data, 'Parameter_AB1_dynamic.xlsx')
 
 # reading data from excel file with data read function
 node_data = setup_solve_model.nodes_from_excel(filename)

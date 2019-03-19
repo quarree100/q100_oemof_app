@@ -8,6 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 import setup_solve_model
 import postprocessing
+import graph_model
 import config as cfg
 import os
 import pprint as pp
@@ -39,6 +40,9 @@ node_data = setup_solve_model.nodes_from_excel(filename)
 
 # setting up energy system
 e_sys = setup_solve_model.setup_es(excel_nodes=node_data)
+
+
+'''
 
 # optimising the energy system
 # e_sys = setup_solve_model.solve_es(energysystem=e_sys, excel_nodes=node_data)
@@ -101,3 +105,22 @@ print(om.total_emissions())
 
 # expoprt the results to excel
 # postprocessing.export_excel(res=results, es=e_sys)
+
+                               
+'''
+
+# plotting Energy System
+graph_model.draw_graph(grph=graph_model.create_nx_graph(e_sys), 
+                       plot=True, layout='neato', node_size=1000,
+                       node_color={
+                               'b_el_ez': '#0049db',
+                               'b_el_bhkw': '#0049db',
+                               'b_el_bhkw_2': '#0049db',
+                               'b_el_buy': '#0049db',
+                               'b_el_sell': '#0049db',
+                               'b_gas_buy': '#f2e60e',
+                               'b_gas_bhkw': '#f2e60e',
+                               'b_heat_gen': '#f95c8b',
+                               'b_heat_grid': '#f95c8b',
+                               'b_heat_35': '#f95c8b',})
+                               

@@ -19,7 +19,7 @@ import logging
 import pandas as pd
 import numpy as np
 from customized import add_contraints
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as pltf   
 
 # getting path to data from ini file
 path_to_data = os.path.join(os.path.expanduser("~"),
@@ -28,8 +28,8 @@ path_to_data = os.path.join(os.path.expanduser("~"),
 # getting path to data from IFAM owncloud
 # path_to_data = 'ownCloud/FhG-owncloud-Quarree-AB3/oemof_AB1/Daten/'
 
-# path_to_results = os.path.join(os.path.expanduser("~"),
-#                             cfg.get('paths', 'results'))
+path_to_results = os.path.join(os.path.expanduser("~"),
+                               cfg.get('paths', 'results'))
 
 filename = os.path.join(
     os.path.expanduser("~"), path_to_data, 'Parameter_AB1_dynamic.xlsx')
@@ -55,7 +55,7 @@ add_contraints.emission_limit_dyn(
 
 logging.info('Solve the optimization problem')
 # if tee_switch is true solver messages will be displayed
-om.solve(solver='cbc', solve_kwargs={'tee': True})
+om.solve(solver='cbc', solve_kwargs={'tee': False})
 
 logging.info('Store the energy system with the results.')
 # add results to the energy system to make it possible to store them.
@@ -63,7 +63,7 @@ e_sys.results['main'] = outputlib.processing.results(om)
 e_sys.results['meta'] = outputlib.processing.meta_results(om)
 
 # store energy system with results
-# e_sys.dump(dpath=path_to_results, filename='test_results')
+e_sys.dump(dpath=path_to_results, filename='results_val_1')
 
 # plot the buses
 postprocessing.plot_buses(res=e_sys.results['main'], es=e_sys)
@@ -88,16 +88,41 @@ def print_buses(res=None, es=None):
 
 print_buses(res=e_sys.results['main'], es=e_sys)
 
+SoC_sequences = outputlib.views.node(e_sys.results['main'], 'storage_heat')["sequences"]
+SoC_sequences = SoC_sequences.drop(SoC_sequences.columns[[0, 2]], 1)
+SoC_sequences.plot(kind='line', drawstyle="steps-mid", subplots=False,
+                   sharey=True)
+plt.show()
+
 print('Total Emission [kg]')
 print(om.total_emissions())
-# plot the investments in transformer
+
+results = e_sys.results['main']
+p_chp_gas = outputlib.views.node(results, 't_boiler')["scalars"][0]
+print('Installierte Leistung Kessel [kW]:')
+print(p_chp_gas)
+p_chp_gas = outputlib.views.node(results, 't_wp_LW35')["scalars"][0]
+print('Installierte t_wp_LW35 [kW]:')
+print(p_chp_gas)
+p_chp_gas = outputlib.views.node(results, 't_wp_W35W70')["scalars"][0]
+print('Installierte t_wp_W35W70 [kW]:')
+print(p_chp_gas)
+p_chp_gas = outputlib.views.node(results, 't_bhkw')["scalars"][0]
+print('Installierte t_bhkw [kW]:')
+print(p_chp_gas)
+
+p = outputlib.views.node(results, 'storage_heat')["scalars"][1]
+print('Installierte Kapazität Wärmespeicher [kWh]:')
+print(p)
+
+# # plot the investments in transformer
 # postprocessing.plot_trans_invest(res=results, es=e_sys)
-
-# plot the storage SoC(t)
+#
+# # plot the storage SoC(t)
 # postprocessing.plot_storages_soc(res=results, es=e_sys)
-
-# plot the installed storage capacities
+#
+# # plot the installed storage capacities
 # postprocessing.plot_storages_invest(res=results, es=e_sys)
-
-# expoprt the results to excel
+#
+# # expoprt the results to excel
 # postprocessing.export_excel(res=results, es=e_sys)

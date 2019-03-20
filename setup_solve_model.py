@@ -183,6 +183,11 @@ def create_nodes(nd=None):
 
                 if t['invest']:
 
+                    if t['eff_out_1'] == 'series':
+                        for col in nd['timeseries'].columns.values:
+                            if col.split('.')[0] == t['label']:
+                                t[col.split('.')[1]] = nd['timeseries'][col]
+
                     # calculation epc
                     epc_t = economics.annuity(
                         capex=t['capex'], n=t['n'],
@@ -198,13 +203,18 @@ def create_nodes(nd=None):
                                 variable_costs=t['variable costs'],
                                 emissions=['emissions'],
                                 investment=solph.Investment(
-                                    ep_costs=epc_t))},
+                                    ep_costs=epc_t+t['service']))},
                             conversion_factors={
                                 busd[t['out_1']]: t['eff_out_1']})
                     )
 
                 else:
                     # create
+                    if t['eff_out_1'] == 'series':
+                        for col in nd['timeseries'].columns.values:
+                            if col.split('.')[0] == t['label']:
+                                t[col.split('.')[1]] = nd['timeseries'][col]
+
                     nodes.append(
                         solph.Transformer(
                             label=t['label'],
@@ -234,7 +244,7 @@ def create_nodes(nd=None):
                             label=t['label'],
                             inputs={busd[t['in_1']]: solph.Flow()},
                             outputs={busd[t['out_1']]: solph.Flow(
-                                investment=solph.Investment(ep_costs=epc_t)),
+                                investment=solph.Investment(ep_costs=epc_t + t['service'])),
                                 busd[t['out_2']]: solph.Flow()
                             },
                             conversion_factors={
@@ -276,7 +286,7 @@ def create_nodes(nd=None):
                             inputs={busd[t['in_1']]: solph.Flow(),
                                     busd[t['in_2']]: solph.Flow()},
                             outputs={busd[t['out_1']]: solph.Flow(
-                                investment=solph.Investment(ep_costs=epc_t))},
+                                investment=solph.Investment(ep_costs=epc_t+t['service']))},
                             conversion_factors={
                                 busd[t['in_1']]: t['eff_in_1'],
                                 busd[t['in_2']]: t['eff_in_2'],
@@ -285,6 +295,12 @@ def create_nodes(nd=None):
                     )
 
                 else:
+
+                    if t['eff_out_1'] == 'series':
+                        for col in nd['timeseries'].columns.values:
+                            if col.split('.')[0] == t['label']:
+                                t[col.split('.')[1]] = nd['timeseries'][col]
+
                     nodes.append(
                         solph.Transformer(
                             label=t['label'],
@@ -316,7 +332,7 @@ def create_nodes(nd=None):
                             inputs={busd[t['in_1']]: solph.Flow(),
                                     busd[t['in_2']]: solph.Flow()},
                             outputs={busd[t['out_1']]: solph.Flow(
-                                investment=solph.Investment(ep_costs=epc_t)),
+                                investment=solph.Investment(ep_costs=epc_t + t['service'])),
                                 busd[t['out_2']]: solph.Flow()},
                             conversion_factors={
                                 busd[t['in_1']]: t['eff_in_1'],

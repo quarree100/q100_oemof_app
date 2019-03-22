@@ -24,6 +24,7 @@ import graph_model as gm
 from oemof.graph import create_nx_graph
 import networkx as nx
 
+
 # getting path to data from ini file
 path_to_data = os.path.join(os.path.expanduser("~"),
                             cfg.get('paths', 'data'))
@@ -44,11 +45,14 @@ node_data = setup_solve_model.nodes_from_excel(filename)
 e_sys = setup_solve_model.setup_es(excel_nodes=node_data)
 
 # plotting Energy System
-logging.info('Energy system Graph')
-grph=create_nx_graph(e_sys)
-pos = nx.drawing.nx_agraph.graphviz_layout(grph, prog=layout) 
-gm.plot_graph(pos, grph)
-
+try:
+        import pygraphviz 
+        grph=create_nx_graph(e_sys)
+        pos = nx.drawing.nx_agraph.graphviz_layout(grph, prog='neato')
+        gm.plot_graph(pos, grph)
+        logging.info('Energy system Graph')
+except ImportError:
+        logging.error('Module pygraphviz not found: Graph was not plotted.')
 
 # optimising the energy system
 # e_sys = setup_solve_model.solve_es(energysystem=e_sys, excel_nodes=node_data)

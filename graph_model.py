@@ -7,73 +7,68 @@ https://github.com/oemof/oemof-examples
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from oemof.graph import create_nx_graph
+
 import networkx as nx
-from matplotlib import pyplot as plt
 
 
 
-def draw_graph(grph, edge_labels=True, node_color='#AFAFAF',
-               edge_color='#CFCFCF', plot=True, node_size=2000,
-               with_labels=True, arrows=True, layout='neato'):
-    """
-    Parameters
-    ----------
-    grph : networkxGraph
-        A graph to draw.
-    edge_labels : boolean
-        Use nominal values of flow as edge label
-    node_color : dict or string
-        Hex color code oder matplotlib color for each node. If string, all
-        colors are the same.
 
-    edge_color : string
-        Hex color code oder matplotlib color for edge color.
+def plot_graph(pos, grph):
+    pos_keys= list()
+    for i in pos.keys():
+        pos_keys.append(i)
 
-    plot : boolean
-        Show matplotlib plot.
+    bus_gas_keys=list()
+    bus_el_keys=list()
+    bus_heat_keys=list()
+    trans_keys=list()
+    nets_keys=list()
+    others_keys=list()
+    for i in pos_keys:
+        x=i[0:4]
+        y=i[0:2]
+        if x=='b_ga':
+            bus_gas_keys.append(i)
+        elif x=='b_el':
+            bus_el_keys.append(i)
+        elif x=='b_he':
+            bus_heat_keys.append(i)
+        elif y=='t_':
+            trans_keys.append(i)
+        elif y=='n_':
+            nets_keys.append(i)
+        else:
+            others_keys.append(i)
+                                
+    bus_gas_nodes=bus_gas_keys
+    bus_el_nodes=bus_el_keys
+    bus_heat_nodes=bus_heat_keys
+    trans_nodes=trans_keys
+    nets_nodes=nets_keys
+    others_nodes=others_keys
+    
 
-    node_size : integer
-        Size of nodes.
+    buses_el=grph.subgraph(bus_el_nodes)
+    pos_buses_el={x:pos[x] for x in bus_el_keys}
+    
+    buses_gas=grph.subgraph(bus_gas_nodes)
+    pos_buses_gas={x:pos[x] for x in bus_gas_keys}
+    
+    buses_heat=grph.subgraph(bus_heat_nodes)
+    pos_buses_heat={x:pos[x] for x in bus_heat_keys}
+    
+    trans=grph.subgraph(trans_nodes)
+    pos_trans={x:pos[x] for x in trans_keys}
 
-    with_labels : boolean
-        Draw node labels.
+    others=grph.subgraph(others_nodes)
+    pos_others={x:pos[x] for x in others_keys}
+    
 
-    arrows : boolean
-        Draw arrows on directed edges. Works only if an optimization_model has
-        been passed.
-    layout : string
-        networkx graph layout, one of: neato, dot, twopi, circo, fdp, sfdp.
-    """
-    if type(node_color) is dict:
-        node_color = [node_color.get(g, '#AFAFAF') for g in grph.nodes()]
-
-    # set drawing options
-    options = {
-        'prog': 'dot',
-        'with_labels': with_labels,
-        'node_color': node_color,
-        'edge_color': edge_color,
-        'node_size': node_size,
-        'arrows': arrows
-    }
-
-    # try to use pygraphviz for graph layout
-    try:
-        import pygraphviz
-        pos = nx.drawing.nx_agraph.graphviz_layout(grph, prog=layout)
-    except ImportError:
-        logging.error('Module pygraphviz not found, I won\'t plot the graph.')
-        return
-
-    # draw graph
-    nx.draw(grph, pos=pos, **options)
-
-    # add edge labels for all edges
-    if edge_labels is True and plt:
-        labels = nx.get_edge_attributes(grph, 'weight')
-        nx.draw_networkx_edge_labels(grph, pos=pos, edge_labels=labels)
-
-    # show output
-    if plot is True:
-        plt.show()
+    nx.draw(grph, pos=pos, node_shape='1', prog='neato',with_labels=True, node_color='#ffffff',edge_color='#CFCFCF',node_size=800,arrows=True)
+    nx.draw(buses_el, pos=pos_buses_el, node_shape='p', node_color='#0049db', node_size=800)
+    nx.draw(buses_gas, pos=pos_buses_gas, node_shape='p', node_color='#f2e60e', node_size=800)
+    nx.draw(buses_heat, pos=pos_buses_heat, node_shape='p', node_color='#f95c8b', node_size=800)
+    nx.draw(trans, pos=pos_trans, node_shape='s', node_color='#CFCFCF', node_size=800)
+    nx.draw(others, pos=pos_others, node_shape='v', node_color='#71f442', node_size=800)    
+    return
+        

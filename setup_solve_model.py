@@ -191,8 +191,8 @@ def create_nodes(nd=None):
                     # calculation epc
                     epc_t = economics.annuity(
                         capex=t['capex'], n=t['n'],
-                        wacc=nd['general']['interest rate'][0]) * \
-                            nd['general']['timesteps'][0] / 8760
+                        wacc=nd['general']['interest rate'][0]) * nd[
+                            'general']['timesteps'][0] / 8760
 
                     # create
                     nodes.append(
@@ -203,7 +203,9 @@ def create_nodes(nd=None):
                                 variable_costs=t['variable costs'],
                                 emissions=['emissions'],
                                 investment=solph.Investment(
-                                    ep_costs=epc_t+t['service']))},
+                                    ep_costs=epc_t + t['service']*(
+                                            nd['general'][
+                                                'timesteps'][0]/8760)))},
                             conversion_factors={
                                 busd[t['out_1']]: t['eff_out_1']})
                     )
@@ -244,7 +246,9 @@ def create_nodes(nd=None):
                             label=t['label'],
                             inputs={busd[t['in_1']]: solph.Flow()},
                             outputs={busd[t['out_1']]: solph.Flow(
-                                investment=solph.Investment(ep_costs=epc_t + t['service'])),
+                                investment=solph.Investment(ep_costs=epc_t + t[
+                                    'service']*(nd[
+                                        'general']['timesteps'][0] / 8760))),
                                 busd[t['out_2']]: solph.Flow()
                             },
                             conversion_factors={
@@ -286,7 +290,9 @@ def create_nodes(nd=None):
                             inputs={busd[t['in_1']]: solph.Flow(),
                                     busd[t['in_2']]: solph.Flow()},
                             outputs={busd[t['out_1']]: solph.Flow(
-                                investment=solph.Investment(ep_costs=epc_t+t['service']))},
+                                investment=solph.Investment(ep_costs=epc_t+t[
+                                    'service']*(nd[
+                                        'general']['timesteps'][0] / 8760)))},
                             conversion_factors={
                                 busd[t['in_1']]: t['eff_in_1'],
                                 busd[t['in_2']]: t['eff_in_2'],
@@ -332,7 +338,11 @@ def create_nodes(nd=None):
                             inputs={busd[t['in_1']]: solph.Flow(),
                                     busd[t['in_2']]: solph.Flow()},
                             outputs={busd[t['out_1']]: solph.Flow(
-                                investment=solph.Investment(ep_costs=epc_t + t['service'])),
+                                investment=solph.Investment(ep_costs=epc_t + t[
+                                    'service']*(nd[
+                                     'general']['timesteps'][0] / 8760),
+                                    maximum=t['max_invest'])
+                                ),
                                 busd[t['out_2']]: solph.Flow()},
                             conversion_factors={
                                 busd[t['in_1']]: t['eff_in_1'],
@@ -349,9 +359,10 @@ def create_nodes(nd=None):
                             inputs={busd[t['in_1']]: solph.Flow(
                                 nominal_value=t['installed'],
                                 summed_max=t['in_1_sum_max']
-                            ),
+                                ),
                                     busd[t['in_2']]: solph.Flow()},
-                            outputs={busd[t['out_1']]: solph.Flow(),
+                            outputs={
+                                busd[t['out_1']]: solph.Flow(),
                                 busd[t['out_2']]: solph.Flow()},
                             conversion_factors={
                                 busd[t['in_1']]: t['eff_in_1'],
@@ -382,7 +393,8 @@ def create_nodes(nd=None):
                         invest_relation_output_capacity=s[
                             'invest_relation_output_capacity'],
                         inflow_conversion_factor=s['inflow_conversion_factor'],
-                        outflow_conversion_factor=s['outflow_conversion_factor'],
+                        outflow_conversion_factor=s[
+                            'outflow_conversion_factor'],
                         investment=solph.Investment(ep_costs=epc_s)))
             else:
                 # create Storages
@@ -394,7 +406,8 @@ def create_nodes(nd=None):
                         capacity_loss=s['capacity_loss'],
                         nominal_capacity=s['capacity'],
                         inflow_conversion_factor=s['inflow_conversion_factor'],
-                        outflow_conversion_factor=s['outflow_conversion_factor'],
+                        outflow_conversion_factor=s[
+                            'outflow_conversion_factor'],
                         ))
 
     return nodes

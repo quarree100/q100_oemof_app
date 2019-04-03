@@ -202,6 +202,7 @@ def create_nodes(nd=None):
                             outputs={busd[t['out_1']]: solph.Flow(
                                 variable_costs=t['variable costs'],
                                 emissions=['emissions'],
+                                summed_max=t['in_1_sum_max'],
                                 investment=solph.Investment(
                                     ep_costs=epc_t + t['service']*(
                                             nd['general'][
@@ -246,6 +247,9 @@ def create_nodes(nd=None):
                             label=t['label'],
                             inputs={busd[t['in_1']]: solph.Flow()},
                             outputs={busd[t['out_1']]: solph.Flow(
+                                summed_max=t['in_1_sum_max'],
+                                variable_costs=t['variable costs'],
+                                emissions=['emissions'],
                                 investment=solph.Investment(ep_costs=epc_t + t[
                                     'service']*(nd[
                                         'general']['timesteps'][0] / 8760))),
@@ -264,6 +268,9 @@ def create_nodes(nd=None):
                             inputs={busd[t['in_1']]: solph.Flow()},
                             outputs={
                                 busd[t['out_1']]: solph.Flow(
+                                    summed_max=t['in_1_sum_max'],
+                                    variable_costs=t['variable costs'],
+                                    emissions=['emissions'],
                                     nominal_value=t['installed']),
                                 busd[t['out_2']]: solph.Flow()
                             },
@@ -290,6 +297,9 @@ def create_nodes(nd=None):
                             inputs={busd[t['in_1']]: solph.Flow(),
                                     busd[t['in_2']]: solph.Flow()},
                             outputs={busd[t['out_1']]: solph.Flow(
+                                summed_max=t['in_1_sum_max'],
+                                variable_costs=t['variable costs'],
+                                emissions=['emissions'],
                                 investment=solph.Investment(ep_costs=epc_t+t[
                                     'service']*(nd[
                                         'general']['timesteps'][0] / 8760)))},
@@ -313,6 +323,9 @@ def create_nodes(nd=None):
                             inputs={busd[t['in_1']]: solph.Flow(),
                                     busd[t['in_2']]: solph.Flow()},
                             outputs={busd[t['out_1']]: solph.Flow(
+                                summed_max=t['in_1_sum_max'],
+                                variable_costs=t['variable costs'],
+                                emissions=['emissions'],
                                 nominal_value=t['installed'])},
                             conversion_factors={
                                 busd[t['in_1']]: t['eff_in_1'],
@@ -338,6 +351,9 @@ def create_nodes(nd=None):
                             inputs={busd[t['in_1']]: solph.Flow(),
                                     busd[t['in_2']]: solph.Flow()},
                             outputs={busd[t['out_1']]: solph.Flow(
+                                summed_max=t['in_1_sum_max'],
+                                variable_costs=t['variable costs'],
+                                emissions=['emissions'],
                                 investment=solph.Investment(ep_costs=epc_t + t[
                                     'service']*(nd[
                                      'general']['timesteps'][0] / 8760),
@@ -357,8 +373,10 @@ def create_nodes(nd=None):
                         solph.Transformer(
                             label=t['label'],
                             inputs={busd[t['in_1']]: solph.Flow(
+                                summed_max=t['in_1_sum_max'],
+                                variable_costs=t['variable costs'],
+                                emissions=['emissions'],
                                 nominal_value=t['installed'],
-                                summed_max=t['in_1_sum_max']
                                 ),
                                     busd[t['in_2']]: solph.Flow()},
                             outputs={

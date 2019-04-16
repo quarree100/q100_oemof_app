@@ -21,7 +21,7 @@ def plot_graph(pos, grph):
     nets_keys = list()
     store_keys = list()
     others_keys = list()
-    
+
     for i in pos_keys:
         x = i[0:4]
         y = i[0:2]

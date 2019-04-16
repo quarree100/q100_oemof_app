@@ -206,7 +206,9 @@ def create_nodes(nd=None):
                                 investment=solph.Investment(
                                     ep_costs=epc_t + t['service']*(
                                             nd['general'][
-                                                'timesteps'][0]/8760)))},
+                                                'timesteps'][0]/8760),
+                                    maximum=t['max_invest'],
+                                    minimum=t['min_invest']))},
                             conversion_factors={
                                 busd[t['out_1']]: t['eff_out_1']})
                     )
@@ -250,9 +252,11 @@ def create_nodes(nd=None):
                                 summed_max=t['in_1_sum_max'],
                                 variable_costs=t['variable costs'],
                                 emissions=['emissions'],
-                                investment=solph.Investment(ep_costs=epc_t + t[
-                                    'service']*(nd[
-                                        'general']['timesteps'][0] / 8760))),
+                                investment=solph.Investment(
+                                    ep_costs=epc_t + t['service']*(nd[
+                                        'general']['timesteps'][0] / 8760),
+                                    maximum=t['max_invest'],
+                                    minimum=t['min_invest'])),
                                 busd[t['out_2']]: solph.Flow()
                             },
                             conversion_factors={
@@ -302,7 +306,9 @@ def create_nodes(nd=None):
                                 emissions=['emissions'],
                                 investment=solph.Investment(ep_costs=epc_t+t[
                                     'service']*(nd[
-                                        'general']['timesteps'][0] / 8760)))},
+                                        'general']['timesteps'][0] / 8760),
+                                    maximum=t['max_invest'],
+                                    minimum=t['min_invest']))},
                             conversion_factors={
                                 busd[t['in_1']]: t['eff_in_1'],
                                 busd[t['in_2']]: t['eff_in_2'],
@@ -357,7 +363,8 @@ def create_nodes(nd=None):
                                 investment=solph.Investment(ep_costs=epc_t + t[
                                     'service']*(nd[
                                      'general']['timesteps'][0] / 8760),
-                                    maximum=t['max_invest'])
+                                    maximum=t['max_invest'],
+                                    minimum=t['min_invest'])
                                 ),
                                 busd[t['out_2']]: solph.Flow()},
                             conversion_factors={

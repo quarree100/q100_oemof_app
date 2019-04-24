@@ -5,6 +5,20 @@ Based on the excel_reader example of oemof_examples repository:
 https://github.com/oemof/oemof-examples
 
 SPDX-License-Identifier: GPL-3.0-or-later
+
+V4.0 With Heat pipes and pv plansts included
+26/04/2019
+4018 
+
+bus gas = b_ga...
+bus electricity = b_el...
+bus heat = b_he...
+generic storage = st...
+transformer = t_...
+sources (nets) = s_...
+Heat pipes = p_... 
+PV Plants = pv_...
+Demand = d_...
 """
 
 
@@ -24,6 +38,9 @@ def plot_graph(pos, grph):
     trans_keys=list()
     nets_keys=list()
     store_keys=list()
+    pipes_keys=list()
+    pv_keys=list()
+    demand_keys=list()
     others_keys=list()
     for i in pos_keys:
         x=i[0:4]
@@ -38,8 +55,14 @@ def plot_graph(pos, grph):
             store_keys.append(i)
         elif y=='t_':
             trans_keys.append(i)
-        elif y=='n_':
+        elif y=='s_':
             nets_keys.append(i)
+        elif y=='p_':
+            pipes_keys.append(i)
+        elif y=='pv':
+            pv_keys.append(i)
+        elif y=='d_':
+            demand_keys.append(i)    
         else:
             others_keys.append(i)
                                 
@@ -49,6 +72,9 @@ def plot_graph(pos, grph):
     trans_nodes=trans_keys
     nets_nodes=nets_keys
     store_nodes=store_keys
+    pipes_nodes=pipes_keys
+    pv_nodes=pv_keys
+    demand_nodes=demand_keys
     others_nodes=others_keys
     
 
@@ -69,19 +95,31 @@ def plot_graph(pos, grph):
     
     store=grph.subgraph(store_nodes)
     pos_store={x:pos[x] for x in store_keys}
+     
+    pipes=grph.subgraph(pipes_nodes)
+    pos_pipes={x:pos[x] for x in pipes_keys}
+    
+    pv=grph.subgraph(pv_nodes)
+    pos_pv={x:pos[x] for x in pv_keys}
 
+    demand=grph.subgraph(demand_nodes)
+    pos_demand={x:pos[x] for x in demand_keys}
+    
     others=grph.subgraph(others_nodes)
     pos_others={x:pos[x] for x in others_keys}
     
-    sizenodes=1500
+    sizenodes=600
 
     nx.draw(grph, pos=pos, node_shape='1', prog='neato',with_labels=True, node_color='#ffffff',edge_color='#CFCFCF',node_size=sizenodes,arrows=True)
     nx.draw(buses_el, pos=pos_buses_el, node_shape='p', node_color='#0049db', node_size=sizenodes)
     nx.draw(buses_gas, pos=pos_buses_gas, node_shape='p', node_color='#f2e60e', node_size=sizenodes)
     nx.draw(buses_heat, pos=pos_buses_heat, node_shape='p', node_color='#f95c8b', node_size=sizenodes)
     nx.draw(trans, pos=pos_trans, node_shape='s', node_color='#85a8c2', node_size=sizenodes)
-    nx.draw(sources, pos=pos_sources, node_shape='P', node_color='#70210c', node_size=sizenodes)
+    nx.draw(sources, pos=pos_sources, node_shape='P', node_color='#7FFFD4', node_size=sizenodes)
     nx.draw(store, pos=pos_store, node_shape='o', node_color='#ac88ff', node_size=sizenodes)
+    nx.draw(pipes, pos=pos_pipes, node_shape='_', node_color='#A52A2A', node_size=1200)
+    nx.draw(pv, pos=pos_pv, node_shape=(8,1,0), node_color='#EEC900', node_size=sizenodes)
+    nx.draw(demand, pos=pos_demand, node_shape='X', node_color='#EE3B3B', node_size=sizenodes)
     nx.draw(others, pos=pos_others, node_shape='v', node_color='#71f442', node_size=sizenodes)    
     return
         

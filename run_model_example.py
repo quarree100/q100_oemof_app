@@ -8,7 +8,6 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 import setup_solve_model
 import postprocessing
-import config as cfg
 import os
 import pprint as pp
 import oemof.solph as solph
@@ -25,9 +24,7 @@ from matplotlib import pyplot as plt
 # getting path to data from IFAM owncloud
 path_to_data = 'ownCloud/FhG-owncloud-Quarree-AB3/oemof_AB1/Daten/'
 
-# path_to_results = os.path.join(os.path.expanduser("~"),
-#                               cfg.get('paths', 'results'))
-
+# selecting input scenario file
 filename = os.path.join(
     os.path.expanduser("~"), path_to_data, 'AB1_Basecase_v10.xlsx')
 

@@ -16,7 +16,7 @@ import oemof.solph as solph
 import matplotlib.pyplot as plt
 from oemof.network import Node
 from oemof.outputlib import processing, views
-import heatpipe
+import customized.heatpipe
 import numpy as np
 
 
@@ -53,7 +53,7 @@ P_input_max = 100   # nominal power of input flow
 P_input_min = 0    # minimal power of input flow
 
 # generic heatpipe
-hp = heatpipe.Heatpipe(
+hp = customized.heatpipe.Heatpipe(
     label='heat_pipe',
     inputs={b_heat_0: solph.Flow()},
     outputs={b_heat_1: solph.Flow(nominal_value=None,

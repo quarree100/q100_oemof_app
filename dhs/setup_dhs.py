@@ -178,7 +178,7 @@ def add_transformer(it, labels):
                             conversion_factors={b_out_1: t['eff_out_1']}))
 
 
-def add_storage(it, labels, busd):
+def add_storage(it, labels):
 
     for i, s in it.iterrows():
         if s['active']:
@@ -259,7 +259,7 @@ df_houses = Dbf5(filename_dbf_points).to_dataframe()
 nd['houses'] = df_houses
 
 # getting data for the technologies of the houses
-xls = pd.ExcelFile(os.path.join(path_to_data,'data_houses.xlsx'))
+xls = pd.ExcelFile(os.path.join(path_to_data, 'data_houses.xlsx'))
 houses_nodes = {'bus': xls.parse('Buses'),
                 'source': xls.parse('Sources'),
                 'demand': xls.parse('Demand'),
@@ -270,7 +270,7 @@ houses_nodes = {'bus': xls.parse('Buses'),
 nd['houses_nodes'] = houses_nodes
 
 #  data for demand series of houses
-xls = pd.ExcelFile(os.path.join(path_to_data,'Timeseries_houses.xlsx'))
+xls = pd.ExcelFile(os.path.join(path_to_data, 'Timeseries_houses.xlsx'))
 
 houses_series = {'heat': xls.parse('heat'),
                  'electricity': xls.parse('electricity'),
@@ -300,7 +300,7 @@ for r, c in nd['houses'].iterrows():
             add_transformer(item, d_labels)
 
         if key == 'storages':
-            add_storage(item, d_labels, busd)
+            add_storage(item, d_labels)
 
     # add pv when there is pv potential
     if c['pv_pot']:

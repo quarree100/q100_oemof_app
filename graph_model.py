@@ -23,13 +23,13 @@ def plot_graph(pos, grph):
     others_keys = list()
 
     for i in pos_keys:
-        x = i[0:4]
+        x = i[0:3]
         y = i[0:2]
-        if x == 'b_ga':
+        if x == 'bg_':
             bus_gas_keys.append(i)
-        elif x == 'b_el':
+        elif x == 'be_':
             bus_el_keys.append(i)
-        elif x == 'b_he':
+        elif x == 'bh_':
             bus_heat_keys.append(i)
         elif y == 'st':
             store_keys.append(i)

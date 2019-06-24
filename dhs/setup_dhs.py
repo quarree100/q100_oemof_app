@@ -338,7 +338,7 @@ for p, q in nd['dhs_pipes'].iterrows():
             b_in = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', start)]
             b_out = busd[('house', d_labels['l_2'], 'bus', end)]
 
-        elif q['end'][:1] == "H":
+        else:
             start = q['start']
             end = q['end']
             b_in = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', start)]

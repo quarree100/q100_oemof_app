@@ -355,10 +355,8 @@ for p, q in nd['dhs_pipes'].iterrows():
             outputs={b_out: solph.Flow(
                 nominal_value=None, investment=solph.Investment(
                     ep_costs=epc_p, maximum=q['cap_max']))},
-            effiency=[1 for k in range(0, num_ts)],
             heat_loss_factor=q['l_factor'],
             length=q['length'],
-            heat_loss=q['h_loss']
         ))
 
     # connection energy generation site
@@ -370,7 +368,7 @@ for p, q in nd['dhs_pipes'].iterrows():
             b_in = busd[('generation', d_labels['l_2'], 'bus', start)]
             b_out = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', end)]
 
-        elif q['end'][:1] == "G":
+        else:
             start = q['end']
             end = q['start']
             b_in = busd[('generation', d_labels['l_2'], 'bus', start)]
@@ -387,10 +385,8 @@ for p, q in nd['dhs_pipes'].iterrows():
             outputs={b_out: solph.Flow(
                 nominal_value=None, investment=solph.Investment(
                     ep_costs=epc_p, maximum=q['cap_max']))},
-            effiency=[1 for k in range(0, num_ts)],
             heat_loss_factor=q['l_factor'],
             length=q['length'],
-            heat_loss=q['h_loss']
         ))
 
     # connection of knots with 2 pipes in each direction
@@ -412,10 +408,8 @@ for p, q in nd['dhs_pipes'].iterrows():
             outputs={b_out: solph.Flow(
                 nominal_value=None, investment=solph.Investment(
                     ep_costs=epc_p, maximum=q['cap_max']))},
-            effiency=[1 for k in range(0, num_ts)],
             heat_loss_factor=q['l_factor'],
-            length=q['length'],
-            heat_loss=q['h_loss']
+            length=q['length']
         ))
 
         start = q['end']
@@ -434,10 +428,8 @@ for p, q in nd['dhs_pipes'].iterrows():
             outputs={b_out: solph.Flow(
                 nominal_value=None, investment=solph.Investment(
                     ep_costs=epc_p, maximum=q['cap_max']))},
-            effiency=[1 for k in range(0, num_ts)],
             heat_loss_factor=q['l_factor'],
-            length=q['length'],
-            heat_loss=q['h_loss']
+            length=q['length']
         ))
 
 

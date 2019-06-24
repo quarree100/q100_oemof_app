@@ -187,6 +187,10 @@ f_invest = num_ts / 8760
 rate = 0.01
 emission_limit = 10000000
 
+# pv parameters
+capex_pv = 100
+n_pv = 20
+
 nodes = []  #
 busd = {}   # all buses needs to be in the dict
 
@@ -195,11 +199,8 @@ d_labels = {'l_1': '',
             'l_3': '',
             'l_4': ''}
 
-
 # Assembly Energy System
-
 # get data houses
-
 # getting path to data from IFAM owncloud
 path_to_data = os.path.join(
     os.path.expanduser("~"),
@@ -229,7 +230,8 @@ nd['houses_nodes'] = houses_nodes
 xls = pd.ExcelFile(os.path.join(path_to_data,'Timeseries_houses.xlsx'))
 
 houses_series = {'heat': xls.parse('heat'),
-                 'electricity': xls.parse('electricity')}
+                 'electricity': xls.parse('electricity'),
+                 'pv': xls.parse('pv')}
 
 nd['houses_series'] = houses_series
 
@@ -254,9 +256,54 @@ for r, c in nd['houses'].iterrows():
         if key == 'transformer':
             add_transformer(item, d_labels)
 
+    if c['pv_pot']:
+        # add pv bus + sink + transformer zu electricity
+        d_labels['l_2'] = 'elec-pv'
+        d_labels['l_3'] = 'bus'
+
+        l_bus_pv = Label(d_labels['l_1'], d_labels['l_2'], d_labels['l_3'],
+                      d_labels['l_4'])
+        bus = solph.Bus(label=l_bus_pv)
+        nodes.append(bus)
+
+        busd[l_bus_pv] = bus
+        # add excess sink for pv
+        d_labels['l_3'] = 'pv-excess'
+        nodes.append(solph.Sink(label=Label(
+            d_labels['l_1'], d_labels['l_2'], d_labels['l_3'],
+            d_labels['l_4']), inputs={busd[l_bus_pv]: solph.Flow()}))
+
+        d_labels['l_2'] = 'electricity'
+        d_labels['l_3'] = 'bus'
+
+        b_out = busd[(d_labels['l_1'], d_labels['l_2'], d_labels['l_3'],
+                      d_labels['l_4'])]
+
+        d_labels['l_2'] = 'elec-pv'
+        d_labels['l_3'] = 'pv-trafo'
+
+        nodes.append(solph.Transformer(label=Label(
+            d_labels['l_1'], d_labels['l_2'], d_labels['l_3'],
+            d_labels['l_4']), inputs={busd[l_bus_pv]: solph.Flow()},
+            outputs={b_out: solph.Flow()}))
+
+        # add pv series
+        d_labels['l_3'] = 'pv-source'
+
+        epc_pv = economics.annuity(capex=capex_pv, n=n_pv,
+                                  wacc=rate) * f_invest
+
+        nodes.append(solph.Source(
+            label=Label(d_labels['l_1'], d_labels['l_2'], d_labels['l_3'],
+                        d_labels['l_4']),
+            outputs={busd[l_bus_pv]: solph.Flow(
+                actual_value=houses_series['pv'][c['ID']],
+                investment=solph.Investment(ep_costs=epc_pv,
+                                            maximum=c['pv_max']),
+                fixed=True)}))
+
 
 # GENERATION
-
 # getting the data for the generations sites from qgis
 filename_dbf_points = os.path.join(path_to_data,
                                    'gis/points_generation.dbf')
@@ -485,7 +532,6 @@ try:
     logging.info('Energy system Graph OK')
 except ImportError:
     logging.info('Module pygraphviz not found: Graph was not plotted.')
-
 
 
 # postprocessing

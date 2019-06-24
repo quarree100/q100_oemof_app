@@ -256,42 +256,19 @@ for r, c in nd['houses'].iterrows():
         if key == 'transformer':
             add_transformer(item, d_labels)
 
+    # add pv when there is pv potential
     if c['pv_pot']:
-        # add pv bus + sink + transformer zu electricity
+        # add pv source series
         d_labels['l_2'] = 'elec-pv'
         d_labels['l_3'] = 'bus'
 
         l_bus_pv = Label(d_labels['l_1'], d_labels['l_2'], d_labels['l_3'],
-                      d_labels['l_4'])
-        bus = solph.Bus(label=l_bus_pv)
-        nodes.append(bus)
+                         d_labels['l_4'])
 
-        busd[l_bus_pv] = bus
-        # add excess sink for pv
-        d_labels['l_3'] = 'pv-excess'
-        nodes.append(solph.Sink(label=Label(
-            d_labels['l_1'], d_labels['l_2'], d_labels['l_3'],
-            d_labels['l_4']), inputs={busd[l_bus_pv]: solph.Flow()}))
-
-        d_labels['l_2'] = 'electricity'
-        d_labels['l_3'] = 'bus'
-
-        b_out = busd[(d_labels['l_1'], d_labels['l_2'], d_labels['l_3'],
-                      d_labels['l_4'])]
-
-        d_labels['l_2'] = 'elec-pv'
-        d_labels['l_3'] = 'pv-trafo'
-
-        nodes.append(solph.Transformer(label=Label(
-            d_labels['l_1'], d_labels['l_2'], d_labels['l_3'],
-            d_labels['l_4']), inputs={busd[l_bus_pv]: solph.Flow()},
-            outputs={b_out: solph.Flow()}))
-
-        # add pv series
         d_labels['l_3'] = 'pv-source'
 
         epc_pv = economics.annuity(capex=capex_pv, n=n_pv,
-                                  wacc=rate) * f_invest
+                                   wacc=rate) * f_invest
 
         nodes.append(solph.Source(
             label=Label(d_labels['l_1'], d_labels['l_2'], d_labels['l_3'],
@@ -301,6 +278,9 @@ for r, c in nd['houses'].iterrows():
                 investment=solph.Investment(ep_costs=epc_pv,
                                             maximum=c['pv_max']),
                 fixed=True)}))
+
+    # add existing heat generators
+    
 
 
 # GENERATION

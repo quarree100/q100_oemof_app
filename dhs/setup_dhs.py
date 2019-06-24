@@ -178,6 +178,48 @@ def add_transformer(it, labels):
                             conversion_factors={b_out_1: t['eff_out_1']}))
 
 
+def add_storage(it, labels, busd):
+
+    for i, s in it.iterrows():
+        if s['active']:
+
+            label_storage = Label(labels['l_1'], s['bus'], s['label'],
+                                  labels['l_4'])
+            label_bus = busd[(labels['l_1'], s['bus'], 'bus', labels['l_4'])]
+
+            if s['invest']:
+
+                epc_s = economics.annuity(
+                    capex=s['capex'], n=s['n'], wacc=rate) * f_invest
+
+                nodes.append(
+                    solph.components.GenericStorage(
+                        label=label_storage,
+                        inputs={label_bus: solph.Flow()},
+                        outputs={label_bus: solph.Flow()},
+                        loss_rate=s['capacity_loss'],
+                        invest_relation_input_capacity=s[
+                            'invest_relation_input_capacity'],
+                        invest_relation_output_capacity=s[
+                            'invest_relation_output_capacity'],
+                        inflow_conversion_factor=s['inflow_conversion_factor'],
+                        outflow_conversion_factor=s[
+                            'outflow_conversion_factor'],
+                        investment=solph.Investment(ep_costs=epc_s)))
+
+            else:
+                nodes.append(
+                    solph.components.GenericStorage(
+                        label=label_storage,
+                        inputs={label_bus: solph.Flow()},
+                        outputs={label_bus: solph.Flow()},
+                        loss_rate=s['capacity_loss'],
+                        nominal_capacity=s['capacity'],
+                        inflow_conversion_factor=s['inflow_conversion_factor'],
+                        outflow_conversion_factor=s[
+                            'outflow_conversion_factor']))
+
+
 # defining general stuff
 nd = {}
 
@@ -221,7 +263,8 @@ xls = pd.ExcelFile(os.path.join(path_to_data,'data_houses.xlsx'))
 houses_nodes = {'bus': xls.parse('Buses'),
                 'source': xls.parse('Sources'),
                 'demand': xls.parse('Demand'),
-                'transformer': xls.parse('Transformer')
+                'transformer': xls.parse('Transformer'),
+                'storages': xls.parse('Storages')
                 }
 
 nd['houses_nodes'] = houses_nodes
@@ -256,6 +299,9 @@ for r, c in nd['houses'].iterrows():
         if key == 'transformer':
             add_transformer(item, d_labels)
 
+        if key == 'storages':
+            add_storage(item, d_labels, busd)
+
     # add pv when there is pv potential
     if c['pv_pot']:
         # add pv source series
@@ -280,7 +326,17 @@ for r, c in nd['houses'].iterrows():
                 fixed=True)}))
 
     # add existing heat generators
-    
+    b_in_1 = busd[(d_labels['l_1'], c['heat_gen'], 'bus', d_labels['l_4'])]
+    b_out_1 = busd[(d_labels['l_1'], 'heat', 'bus', d_labels['l_4'])]
+
+    nodes.append(
+        solph.Transformer(
+            label=Label(d_labels['l_1'], 'existing',
+                        c['heat_gen'] + '-boiler', d_labels['l_4']),
+            inputs={b_in_1: solph.Flow()},
+            outputs={b_out_1: solph.Flow(
+                nominal_value=c['p_install'])},
+            conversion_factors={b_out_1: c['efficiency']}))
 
 
 # GENERATION

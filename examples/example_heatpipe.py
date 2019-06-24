@@ -60,10 +60,8 @@ hp = customized.heatpipe.HeatPipeline(
                                   investment=solph.Investment(ep_costs=10000,
                                                               maximum=300),
                                   )},
-    effiency=[1 for k in range(0, periods)],
     heat_loss_factor=0.0002,
-    length=200.0,
-    heat_loss=0.2
+    length=200.0
     )
 
 # create an optimization problem and solve it

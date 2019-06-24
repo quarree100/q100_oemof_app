@@ -53,7 +53,7 @@ P_input_max = 100   # nominal power of input flow
 P_input_min = 0    # minimal power of input flow
 
 # generic heatpipe
-hp = customized.heatpipe.Heatpipe(
+hp = customized.heatpipe.HeatPipeline(
     label='heat_pipe',
     inputs={b_heat_0: solph.Flow()},
     outputs={b_heat_1: solph.Flow(nominal_value=None,

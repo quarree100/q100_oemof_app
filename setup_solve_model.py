@@ -22,13 +22,18 @@ def nodes_from_excel(filename):
 
     xls = pd.ExcelFile(filename)
 
+    try:
+        nd_heatpipes = xls.parse('Heatpipes')
+    except:
+        nd_heatpipes = 0
+
     nodes_data = {'buses': xls.parse('Buses'),
                   'commodity_sources': xls.parse('Sources'),
                   'sources_series': xls.parse('Sources_series'),
                   'demand': xls.parse('Demand'),
                   'sinks': xls.parse('Sinks'),
                   'transformer': xls.parse('Transformer'),
-                  'heatpipes': xls.parse('Heatpipes'),
+                  'heatpipes': nd_heatpipes,
                   'storages': xls.parse('Storages'),
                   'timeseries': xls.parse('Timeseries'),
                   'general': xls.parse('General')
@@ -400,53 +405,33 @@ def create_nodes(nd=None):
                     )
 
     # Create Transformer objects from 'transformers' table
-    for i, hp in nd['heatpipes'].iterrows():
-        if hp['active']:
-            if hp['invest']:
+    if nd['heatpipes'] is not 0:
+        for i, hp in nd['heatpipes'].iterrows():
+            if hp['active']:
+                if hp['invest']:
 
-                # calculation epc
-                epc_t = economics.annuity(
-                    capex=hp['capex'], n=hp['n'],
-                    wacc=nd['general']['interest rate'][0]) * nd[
-                            'general']['timesteps'][0] / 8760
+                    # calculation epc
+                    epc_t = economics.annuity(
+                        capex=hp['capex'], n=hp['n'],
+                        wacc=nd['general']['interest rate'][0]) * nd[
+                                'general']['timesteps'][0] / 8760
 
-                # create
-                nodes.append(
-                    heatpipe.Heatpipe(
-                        label=hp['label'],
-                        inputs={busd[hp['in_1']]: solph.Flow()},
-                        outputs={busd[hp['out_1']]: solph.Flow(
-                            investment=solph.Investment(
-                                ep_costs=epc_t + hp['service'] * (
-                                        nd['general'][
-                                            'timesteps'][0] / 8760),
-                                maximum=hp['max_invest'],
-                                minimum=hp['min_invest']))},
-                        effiency=[hp['efficiency'] for k in range(
-                            0, nd['general']['timesteps'][0])],
-                        heat_loss_factor=hp['heat_loss_factor'],
-                        length=hp['length']))
-
-            # else:
-            #     # create
-            #     if t['eff_out_1'] == 'series':
-            #         for col in nd['timeseries'].columns.values:
-            #             if col.split('.')[0] == t['label']:
-            #                 t[col.split('.')[1]] = nd['timeseries'][
-            #                     col]
-            #
-            #     nodes.append(
-            #         solph.Transformer(
-            #             label=t['label'],
-            #             inputs={busd[t['in_1']]: solph.Flow()},
-            #             outputs={busd[t['out_1']]: solph.Flow(
-            #                 nominal_value=t['installed'],
-            #                 summed_max=t['in_1_sum_max'],
-            #                 variable_costs=t['variable costs'],
-            #                 emissions=['emissions'])},
-            #             conversion_factors={
-            #                 busd[t['out_1']]: t['eff_out_1']})
-            #     )
+                    # create
+                    nodes.append(
+                        heatpipe.HeatPipeline(
+                            label=hp['label'],
+                            inputs={busd[hp['in_1']]: solph.Flow()},
+                            outputs={busd[hp['out_1']]: solph.Flow(
+                                investment=solph.Investment(
+                                    ep_costs=epc_t + hp['service'] * (
+                                            nd['general'][
+                                                'timesteps'][0] / 8760),
+                                    maximum=hp['max_invest'],
+                                    minimum=hp['min_invest']))},
+                            effiency=[hp['efficiency'] for k in range(
+                                0, nd['general']['timesteps'][0])],
+                            heat_loss_factor=hp['heat_loss_factor'],
+                            length=hp['length']))
 
     # create storages
     for i, s in nd['storages'].iterrows():
@@ -464,7 +449,7 @@ def create_nodes(nd=None):
                         label=s['label'],
                         inputs={busd[s['bus']]: solph.Flow()},
                         outputs={busd[s['bus']]: solph.Flow()},
-                        capacity_loss=s['capacity_loss'],
+                        loss_rate=s['capacity_loss'],
                         invest_relation_input_capacity=s[
                             'invest_relation_input_capacity'],
                         invest_relation_output_capacity=s[
@@ -480,7 +465,7 @@ def create_nodes(nd=None):
                         label=s['label'],
                         inputs={busd[s['bus']]: solph.Flow()},
                         outputs={busd[s['bus']]: solph.Flow()},
-                        capacity_loss=s['capacity_loss'],
+                        loss_rate=s['capacity_loss'],
                         nominal_capacity=s['capacity'],
                         inflow_conversion_factor=s['inflow_conversion_factor'],
                         outflow_conversion_factor=s[

@@ -28,7 +28,7 @@ def nodes_from_excel(filename):
                   'demand': xls.parse('Demand'),
                   'sinks': xls.parse('Sinks'),
                   'transformer': xls.parse('Transformer'),
-                  'heatpipes': xls.parse('Heatpipes'),
+#                  'heatpipes': xls.parse('Heatpipes'),
                   'storages': xls.parse('Storages'),
                   'timeseries': xls.parse('Timeseries'),
                   'general': xls.parse('General')
@@ -399,6 +399,7 @@ def create_nodes(nd=None):
                             })
                     )
 
+    """
     # Create Transformer objects from 'transformers' table
     for i, hp in nd['heatpipes'].iterrows():
         if hp['active']:
@@ -448,6 +449,7 @@ def create_nodes(nd=None):
             #                 busd[t['out_1']]: t['eff_out_1']})
             #     )
 
+    """
     # create storages
     for i, s in nd['storages'].iterrows():
         if s['active']:
@@ -464,7 +466,7 @@ def create_nodes(nd=None):
                         label=s['label'],
                         inputs={busd[s['bus']]: solph.Flow()},
                         outputs={busd[s['bus']]: solph.Flow()},
-                        capacity_loss=s['capacity_loss'],
+                        loss_rate=s['capacity_loss'],
                         invest_relation_input_capacity=s[
                             'invest_relation_input_capacity'],
                         invest_relation_output_capacity=s[
@@ -480,7 +482,7 @@ def create_nodes(nd=None):
                         label=s['label'],
                         inputs={busd[s['bus']]: solph.Flow()},
                         outputs={busd[s['bus']]: solph.Flow()},
-                        capacity_loss=s['capacity_loss'],
+                        loss_rate=s['capacity_loss'],
                         nominal_capacity=s['capacity'],
                         inflow_conversion_factor=s['inflow_conversion_factor'],
                         outflow_conversion_factor=s[

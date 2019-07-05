@@ -26,7 +26,7 @@ path_to_data = 'ownCloud/FhG-owncloud-Quarree-AB3/oemof_AB1/Daten/'
 
 # selecting input scenario file
 filename = os.path.join(
-    os.path.expanduser("~"), path_to_data, 'AB1_Basecase_v10.xlsx')
+    os.path.expanduser("~"), path_to_data, 'AB1_Basecase_v12.xlsx')
 
 # reading data from excel file with data read function
 node_data = setup_solve_model.nodes_from_excel(filename)

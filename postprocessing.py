@@ -98,6 +98,53 @@ def plot_storages_invest(res=None, es=None):
     plt.show()
 
 
+def plot_invest(res=None, om=None):
+
+
+    # Zeige alle Investment Flows
+    l_invest = []
+    p_invest = []
+    inv_flows = om.InvestmentFlow.invest._data
+    list_flows = [k for k in inv_flows]
+    filter = []
+    t1 = []
+    t2 = []
+
+    # Check for Type
+    for n in range(len(list_flows)):
+        t1.append(str(type(list_flows[n][0])))
+        t2.append(str(type(list_flows[n][1])))
+
+    # Filter storage flows counted twice
+    for n in range(len(t2)):
+        filter.append("Bus" not in t2[n])
+
+    list_flows = [i for indx, i in enumerate(list_flows) if filter[indx]==False]
+
+    # Check for Storage -> Capacity instead of rated Power
+    for n in range(len(list_flows)):
+
+        fnode = str(list_flows[n][0])
+        if "GenericStorage" in str(type(list_flows[n][0])):
+            tnode = 'None'
+        else:
+            tnode = str(list_flows[n][1])
+
+        p_invest.append(outputlib.views.node(res, fnode)["scalars"][((fnode, tnode), 'invest')])
+        l_invest.append(fnode)
+
+    # plot the installed Capacities
+    y = p_invest
+    x = l_invest
+    width = 2/3
+    plt.bar(x, y, width, color="blue")
+    plt.ylabel('Inst. Leistung [kW] / Inst. Kapazität [kWh]')
+    plt.xlabel('Investierte Technologie')
+    plt.title('Alle getaetigten Investitionen')
+    plt.xticks(rotation=45)
+    plt.show()
+
+
 def export_excel(res=None, es=None):
 
     l_buses = []

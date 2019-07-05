@@ -115,20 +115,45 @@ def create_nodes(nd=None):
     # Create Source objects with fixed time series from 'renewables' table
     for i, ss in nd['sources_series'].iterrows():
         if ss['active']:
-            # set static outflow values
-            outflow_args = {'nominal_value': ss['scalingfactor'],
-                            'fixed': True}
-            # get time series for node and parameter
-            for col in nd['timeseries'].columns.values:
-                if col.split('.')[0] == ss['label']:
-                    outflow_args[col.split('.')[1]] = nd['timeseries'][col]
+            if ss['invest']:
+                # calculation epc
+                epc = economics.annuity(
+                    capex=ss['capex'], n=ss['n'],
+                    wacc=nd['general']['interest rate'][0]) * nd[
+                          'general']['timesteps'][0] / 8760
 
-            # create
-            nodes.append(
-                solph.Source(label=ss['label'],
-                             outputs={
-                                 busd[ss['to']]: solph.Flow(**outflow_args)})
-            )
+                # get time series for node and parameter
+                for col in nd['timeseries'].columns.values:
+                    if col.split('.')[0] == ss['label']:
+                        av = nd['timeseries'][col]
+
+                # create
+                nodes.append(
+                    solph.Source(label=ss['label'],
+                                 outputs={
+                                     busd[ss['to']]: solph.Flow(
+                                         fixed=True,
+                                         actual_value=av,
+                                         investment=solph.Investment(ep_costs=epc,
+                                                                     maximum=ss['max_invest'])
+                                     )})
+                )
+
+            else:
+                # set static outflow values
+                outflow_args = {'nominal_value': ss['installed'],
+                                'fixed': True}
+                # get time series for node and parameter
+                for col in nd['timeseries'].columns.values:
+                    if col.split('.')[0] == ss['label']:
+                        outflow_args[col.split('.')[1]] = nd['timeseries'][col]
+
+                # create
+                nodes.append(
+                    solph.Source(label=ss['label'],
+                                 outputs={
+                                     busd[ss['to']]: solph.Flow(**outflow_args)})
+                )
 
     # Create Sink objects with fixed time series from 'demand' table
     for i, de in nd['demand'].iterrows():

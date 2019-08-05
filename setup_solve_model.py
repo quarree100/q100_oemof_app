@@ -642,7 +642,7 @@ def co2_optimisation(nd):
 
     nd['sinks']['cost_series'] = nd['sinks'][
         'emission_series']
-    nd['sinks']['variable costs'] = nd['sinks'][
+    nd['sinks']['variable_costs'] = nd['sinks'][
         'emissions']
 
     return nd

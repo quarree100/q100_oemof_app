@@ -609,3 +609,40 @@ def create_comp_lists(es=None):
                  }
 
     return comp_dict
+
+
+def co2_optimisation(nd):
+    """
+    This function replace all cost parameters by emission parameters.
+    In detail:
+    - all Invest
+    - ...
+
+    :param nd:
+    :return:
+    """
+
+    nd['storages']['capex'] = 0
+    nd['storages']['service'] = 0
+    # transformer
+    nd['transformer']['capex'] = 0
+    nd['transformer']['service'] = 0
+    nd['transformer']['variable costs'] = \
+        nd['transformer']['emissions']
+    # sources
+    nd['commodity_sources']['cost_series'] = \
+        nd['commodity_sources']['emission_series']
+    nd['commodity_sources']['variable costs'] = \
+        nd['commodity_sources']['emissions']
+
+    for col in nd['timeseries'].columns.values:
+        if 'variable_costs' in col:
+            nd['timeseries'][col] = nd['timeseries'][
+                col.split('..')[0] + '.emission_factor']
+
+    nd['sinks']['cost_series'] = nd['sinks'][
+        'emission_series']
+    nd['sinks']['variable costs'] = nd['sinks'][
+        'emissions']
+
+    return nd

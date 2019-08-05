@@ -406,15 +406,14 @@ def create_nodes(nd=None):
                     nodes.append(
                         solph.Transformer(
                             label=t['label'],
-                            inputs={busd[t['in_1']]: solph.Flow(
-                                summed_max=t['in_1_sum_max'],
-                                variable_costs=t['variable costs'],
-                                emissions=['emissions'],
-                                nominal_value=t['installed'],
-                                ),
+                            inputs={busd[t['in_1']]: solph.Flow(),
                                     busd[t['in_2']]: solph.Flow()},
                             outputs={
-                                busd[t['out_1']]: solph.Flow(),
+                                busd[t['out_1']]: solph.Flow(
+                                    summed_max=t['in_1_sum_max'],
+                                    variable_costs=t['variable costs'],
+                                    emissions=['emissions'],
+                                    nominal_value=t['installed']),
                                 busd[t['out_2']]: solph.Flow()},
                             conversion_factors={
                                 busd[t['in_1']]: t['eff_in_1'],
@@ -502,13 +501,19 @@ def create_nodes(nd=None):
                         investment=solph.Investment(ep_costs=epc_s)))
             else:
                 # create Storages
+                if type(s['initial_storage_level']) is str or 'nan':
+                    isl = None
+                else:
+                    isl = s['initial_storage_level']
+
                 nodes.append(
                     solph.components.GenericStorage(
                         label=s['label'],
                         inputs={busd[s['bus']]: solph.Flow()},
                         outputs={busd[s['bus']]: solph.Flow()},
                         loss_rate=s['capacity_loss'],
-                        nominal_capacity=s['capacity'],
+                        nominal_storage_capacity=s['capacity'],
+                        initial_storage_level=isl,
                         inflow_conversion_factor=s['inflow_conversion_factor'],
                         outflow_conversion_factor=s[
                             'outflow_conversion_factor'],
@@ -524,7 +529,12 @@ def setup_es(excel_nodes=None):
 
     number_timesteps = excel_nodes['general']['timesteps'][0]
 
-    date_time_index = pd.date_range('1/1/2018',
+    if 'offset_timestamp' in excel_nodes['general'].columns:
+        start = pd.to_datetime('1/1/2018') + excel_nodes['general']['offset_timestamp'][0]
+    else:
+        start = pd.to_datetime('1/1/2018')
+
+    date_time_index = pd.date_range(start,
                                     periods=number_timesteps,
                                     freq='H')
     energysystem = solph.EnergySystem(timeindex=date_time_index)
@@ -537,15 +547,15 @@ def setup_es(excel_nodes=None):
     # add nodes and flows to energy system
     energysystem.add(*my_nodes)
 
-    print('Energysystem has been created')
-
-    print("*********************************************************")
-    print("The following objects have been created from excel sheet:")
-    for n in energysystem.nodes:
-        oobj =\
-            str(type(n)).replace("<class 'oemof.solph.", "").replace("'>", "")
-        print(oobj + ':', n.label)
-    print("*********************************************************")
+    # print('Energysystem has been created')
+    #
+    # print("*********************************************************")
+    # print("The following objects have been created from excel sheet:")
+    # for n in energysystem.nodes:
+    #     oobj =\
+    #         str(type(n)).replace("<class 'oemof.solph.", "").replace("'>", "")
+    #     print(oobj + ':', n.label)
+    # print("*********************************************************")
 
     return energysystem
 

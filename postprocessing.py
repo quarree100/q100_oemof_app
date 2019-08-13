@@ -9,6 +9,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 import oemof.outputlib as outputlib
+import oemof.solph as solph
 import pandas as pd
 import os
 import config as cfg
@@ -204,3 +205,97 @@ def export_excel(res=None, es=None):
     with pd.ExcelWriter(os.path.join(path_to_results, filename)) as xls:
         df_series.to_excel(xls, sheet_name='Timeseries')
         df_invest_ges.to_excel(xls, sheet_name='Invest')
+
+
+def analyse_costs(es):
+    """
+    It is necessary to store the parameter and results
+    like this:
+
+    e_sys.results['main'] = outputlib.processing.results(om)
+    e_sys.results['parameter'] = outputlib.processing.parameter_as_dict(om.es)
+
+    :param es:
+    :return: dict with cost structure
+    """
+
+    d_costs = {}
+
+    p = es.results['parameter']
+    r = es.results['main']
+
+    # variable costs
+    flows = [x for x in p if x[1] is not None]
+
+    var_const = [x for x in flows if hasattr(p[x]['scalars'],
+                                             'variable_costs')]
+    var_seq = [x for x in flows if hasattr(p[x]['sequences'],
+                                           'variable_costs')]
+
+    var_const = [x for x in var_const if
+                 p[x]['scalars']['variable_costs'] != 0]
+
+    var_seq = [x for x in var_seq if
+               r[x]['sequences'].sum() != 0]
+
+    df_const = pd.DataFrame(index=es.timeindex)
+    for flow in var_const:
+        label = (flow[0].label, flow[1].label)
+        values = r[flow]["sequences"].values * p[flow]["scalars"][
+            'variable_costs']
+        df_const[label] = values
+
+    df_seq = pd.DataFrame(index=es.timeindex)
+    for flow in var_seq:
+        label = (flow[0].label, flow[1].label)
+        values = r[flow]["sequences"].values * p[flow]["sequence"][
+            'variable_costs']
+        df_seq[label] = values
+
+    df = pd.concat([df_const, df_seq], axis=1)
+    var_costs = df.sum().sum()
+
+    d_costs.update({'variable': {'total': var_costs,
+                                 'detail': df}})
+
+    # investment costs
+    # flows
+    flows = [x for x in r.keys() if x[1] is not None]
+
+    # get keys of investmentflows out of list of flows
+    invest_flows_all = [x for x in flows if hasattr(
+        r[x]['scalars'], 'invest')]
+
+    df_invest_flows = pd.DataFrame(index=['invest'])
+    for flow in invest_flows_all:
+        label = (flow[0].label, flow[1].label)
+        value = r[flow]["scalars"]['invest']
+        df_invest_flows[label] = value * p[flow]['scalars'][
+            'investment_ep_costs']
+
+    # storages
+    flows = [x for x in r.keys() if x[1] is None]
+
+    # get keys of investmentflows out of list of flows
+    invest_flows_all = [x for x in flows if hasattr(
+        r[x]['scalars'], 'invest')]
+
+    # get list of keys of investment trafos
+    invest_storages = [x for x in invest_flows_all if isinstance(
+        x[0], solph.components.GenericStorage)]
+
+    df_invest_store = pd.DataFrame(index=['invest'])
+    for flow in invest_storages:
+        label = (flow[0].label, None)
+        value = r[flow]["scalars"]['invest']
+        df_invest_store[label] = value * p[flow]['scalars'][
+            'investment_ep_costs']
+
+    df_2 = pd.concat([df_invest_flows, df_invest_store], axis=1)
+    invest_costs = df_2.sum().sum()
+
+    d_costs.update({'invest': {'total': invest_costs,
+                               'detail': df_2},
+                    'total': invest_costs + var_costs})
+
+    return d_costs
